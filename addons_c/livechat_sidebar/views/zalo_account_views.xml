@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <record id="custom_discuss_channel_view_tree" model="ir.ui.view">
+        <field name="name">discuss.channel.list</field>
+        <field name="model">discuss.channel</field>
+        <field name="arch" type="xml">
+            <list js_class="im_livechat.discuss_channel_list" sample="1" string="History" create="false"
+                  default_order="create_date desc, id desc">
+                <field name="create_date" string="Date"/>
+                <field name="name" string="Khách hàng" optional="show"/>
+                <field name="livechat_agent_history_ids" string="Sale" widget="many2many_tags_avatar"
+                       optional="show"/>
+                <field name="livechat_agent_requesting_help_history" widget="many2one_avatar" optional="hide"/>
+                <field name="livechat_agent_providing_help_history" widget="many2one_avatar" optional="hide"/>
+                <field name="livechat_bot_history_ids" string="Chatbot" widget="many2many_tags_avatar" optional="hide"/>
+                <field name="country_id" optional="hide"/>
+                <field name="livechat_lang_id" optional="hide"/>
+                <field name="livechat_expertise_ids" string="Expertise" widget="many2many_tags" optional="hide"/>
+                <field name="livechat_conversation_tag_ids" string="Tags" widget="many2many_tags"
+                       options="{'color_field': 'color'}" optional="hide"/>
+                <field name="livechat_channel_id" optional="hide"/>
+                <field name="duration" widget="float_time" options="{'displaySeconds': True}" optional="show"/>
+                <field name="message_count" string="Tin nhắn" optional="show"/>
+                <field name="rating_last_text" string="Đánh giá" decoration-danger="rating_last_text == 'ko'"
+                       decoration-warning="rating_last_text == 'ok'" decoration-success="rating_last_text == 'top'"
+                       widget="badge" optional="hide"/>
+                <field name="rating_last_feedback" string="Ghi chú" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="zalo_account_view_tree" model="ir.ui.view">
+        <field name="name">zalo.account.tree</field>
+        <field name="model">zalo.account</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name" string="Tên tài khoản"/>
+                <field name="account_id" string="Mã tài khoản"/>
+                <field name="zalo_id" string="Zalo UID"/>
+                <field name="state" string="Trạng thái" widget="badge"
+                       decoration-success="state == 'connected'"
+                       decoration-warning="state == 'connecting'"
+                       decoration-danger="state == 'error'"
+                       decoration-muted="state == 'disconnected'"/>
+                <field name="user_ids" string="Người dùng" widget="many2many_tags"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="zalo_account_view_form" model="ir.ui.view">
+        <field name="name">zalo.account.form</field>
+        <field name="model">zalo.account</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_login" type="object"
+                            string="Đăng nhập (QR)" class="btn-primary"
+                            invisible="state == 'connected'"/>
+                    <button name="action_check_status" type="object"
+                            string="Kiểm tra trạng thái" class="btn-secondary"/>
+                    <button name="action_logout" type="object"
+                            string="Đăng xuất" class="btn-danger"
+                            invisible="state != 'connected'"
+                            confirm="Bạn chắc chắn muốn đăng xuất?"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="disconnected,connecting,connected"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Ví dụ: Bán hàng, CSKH..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Cấu hình Bridge Server">
+                            <field name="bridge_url"/>
+                            <field name="account_id"/>
+                        </group>
+                        <group string="Thông tin Zalo">
+                            <field name="zalo_id"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group string="Người dùng được phép">
+                        <field name="user_ids" widget="many2many_tags" nolabel="1"
+                               placeholder="Để trống = tất cả nhân viên đều dùng được"/>
+                    </group>
+                    <group string="Thông tin lỗi" invisible="not error_message">
+                        <field name="error_message" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="zalo_account_action" model="ir.actions.act_window">
+        <field name="name">Tài khoản Zalo</field>
+        <field name="res_model">zalo.account</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Thêm tài khoản Zalo
+            </p>
+            <p>Kết nối Zalo với Odoo thông qua Bridge Server (zca-js).</p>
+        </field>
+    </record>
+
+</odoo>

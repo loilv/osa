@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_asterisk_server_manager,asterisk.server.manager,model_asterisk_server,group_asterisk_manager,1,1,1,1
+access_asterisk_user_user,asterisk.user.user,model_asterisk_user,group_asterisk_user,1,0,0,0
+access_asterisk_user_manager,asterisk.user.manager,model_asterisk_user,group_asterisk_manager,1,1,1,1
+access_asterisk_call_log_user,asterisk.call.log.user,model_asterisk_call_log,group_asterisk_user,1,1,1,0
+access_asterisk_call_log_manager,asterisk.call.log.manager,model_asterisk_call_log,group_asterisk_manager,1,1,1,1
+access_asterisk_user_status_log_user,asterisk.user.status.log.user,model_asterisk_user_status_log,group_asterisk_user,1,0,0,0
+access_asterisk_user_status_log_manager,asterisk.user.status.log.manager,model_asterisk_user_status_log,group_asterisk_manager,1,1,1,1

@@ -1,0 +1,76 @@
+.o_livechat_sidebar_container {
+    height: 100%;
+    width: 100%;
+}
+
+.o_livechat_session_sidebar {
+    width: 280px;
+    min-width: 280px;
+    max-width: 280px;
+    border-right: 1px solid var(--o-border-color, #dee2e6);
+    background-color: var(--o-view-background-color, #fff);
+    flex-shrink: 0;
+
+    .o_sidebar_header {
+        background-color: var(--o-view-background-color, #fff);
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+    }
+
+    .o_sidebar_search {
+        .input-group-text {
+            border-color: var(--o-border-color, #dee2e6);
+        }
+        .form-control {
+            border-color: var(--o-border-color, #dee2e6);
+            &:focus {
+                box-shadow: none;
+                border-color: var(--o-color-primary, #714bea);
+            }
+        }
+    }
+
+    .o_sidebar_sessions_list {
+        .o_sidebar_session_item {
+            transition: background-color 0.15s ease;
+
+            &:hover {
+                background-color: rgba(0, 0, 0, 0.04);
+            }
+
+            &.o_active {
+                background-color: rgba(var(--o-color-primary-rgb, 113, 75, 234), 0.08);
+                border-left: 3px solid var(--o-color-primary, #714bea);
+
+                .o_session_visitor_name {
+                    color: var(--o-color-primary, #714bea);
+                }
+            }
+
+            &.o_unreplied {
+                background-color: rgba(255, 193, 7, 0.06);
+            }
+
+            &.o_unreplied:hover {
+                background-color: rgba(255, 193, 7, 0.12);
+            }
+
+            .o_session_avatar_icon {
+                font-weight: 600;
+            }
+
+            .o_session_info {
+                min-width: 0;
+            }
+
+            .o_session_preview {
+                line-height: 1.4;
+            }
+        }
+    }
+}
+
+.o_livechat_main_content {
+    min-width: 0;
+}

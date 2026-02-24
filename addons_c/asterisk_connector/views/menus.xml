@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Main Menu -->
+    <menuitem id="asterisk_menu_root"
+              name="Điện thoại"
+              web_icon="asterisk_connector,static/description/icon.png"
+              sequence="45"/>
+
+    <!-- Call Log Menu -->
+    <menuitem id="asterisk_menu_calls"
+              name="Cuộc gọi"
+              parent="asterisk_menu_root"
+              sequence="10"/>
+
+    <menuitem id="asterisk_menu_my_calls"
+              name="Cuộc gọi của tôi"
+              parent="asterisk_menu_calls"
+              action="call_log_my_action"
+              sequence="10"/>
+
+    <menuitem id="asterisk_menu_all_calls"
+              name="Tất cả cuộc gọi"
+              parent="asterisk_menu_calls"
+              action="call_log_action"
+              groups="group_asterisk_manager"
+              sequence="20"/>
+
+    <!-- Configuration Menu -->
+    <menuitem id="asterisk_menu_config"
+              name="Cấu hình"
+              parent="asterisk_menu_root"
+              groups="group_asterisk_manager"
+              sequence="90"/>
+
+    <menuitem id="asterisk_menu_servers"
+              name="Asterisk Servers"
+              parent="asterisk_menu_config"
+              action="asterisk_server_action"
+              sequence="10"/>
+
+    <menuitem id="asterisk_menu_users"
+              name="User Extensions"
+              parent="asterisk_menu_config"
+              action="asterisk_user_action"
+              sequence="20"/>
+</odoo>

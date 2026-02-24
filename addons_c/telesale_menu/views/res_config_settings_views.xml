@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_telesale" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.telesale</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Telesale Menu" string="Telesale Menu" name="telesale_menu" groups="base.group_system">
+                    <block title="Branding" name="telesale_branding">
+                        <setting string="Telesale Logo" help="Logo displayed in the menu">
+                            <div class="content-group">
+                                <div class="row mt16">
+                                    <label for="telesale_logo" class="col-lg-3 o_light_label"/>
+                                    <field name="telesale_logo" widget="image" class="oe_avatar"/>
+                                </div>
+                            </div>
+                        </setting>
+                        <setting string="Favicon" help="Browser tab icon">
+                            <div class="content-group">
+                                <div class="row mt16">
+                                    <label for="telesale_favicon" class="col-lg-3 o_light_label"/>
+                                    <field name="telesale_favicon" widget="image" class="oe_avatar"/>
+                                </div>
+                            </div>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

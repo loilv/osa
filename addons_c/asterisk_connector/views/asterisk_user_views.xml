@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Asterisk User Form View -->
+    <record id="asterisk_user_view_form" model="ir.ui.view">
+        <field name="name">asterisk.user.view.form</field>
+        <field name="model">asterisk.user</field>
+        <field name="arch" type="xml">
+            <form string="Asterisk User">
+                <sheet>
+                    <group>
+                        <group string="Thông tin cơ bản">
+                            <field name="user_id"/>
+                            <field name="server_id"/>
+                            <field name="extension"/>
+                            <field name="sip_password" password="True"/>
+                            <field name="channel_type"/>
+                            <field name="channel" readonly="1"/>
+                        </group>
+                        <group string="Cài đặt">
+                            <field name="call_type"/>
+                            <field name="caller_id"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Asterisk User List View -->
+    <record id="asterisk_user_view_list" model="ir.ui.view">
+        <field name="name">asterisk.user.view.list</field>
+        <field name="model">asterisk.user</field>
+        <field name="arch" type="xml">
+            <list string="Asterisk Users" editable="bottom">
+                <field name="user_id"/>
+                <field name="server_id"/>
+                <field name="extension"/>
+                <field name="sip_password" password="True"/>
+                <field name="channel_type"/>
+                <field name="call_type"/>
+                <field name="channel" readonly="1"/>
+                <field name="caller_id"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Asterisk User Action -->
+    <record id="asterisk_user_action" model="ir.actions.act_window">
+        <field name="name">Asterisk Users</field>
+        <field name="res_model">asterisk.user</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Thêm User Extension
+            </p>
+            <p>
+                Gán số extension cho người dùng Odoo để sử dụng tính năng gọi điện
+            </p>
+        </field>
+    </record>
+</odoo>

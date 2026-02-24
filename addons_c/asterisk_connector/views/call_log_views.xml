@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Call Log Form View -->
+    <record id="call_log_view_form" model="ir.ui.view">
+        <field name="name">asterisk.call.log.view.form</field>
+        <field name="model">asterisk.call.log</field>
+        <field name="arch" type="xml">
+            <form string="Chi tiết cuộc gọi">
+                <header>
+                    <button name="action_callback" type="object" string="Gọi lại" 
+                            class="btn-primary" icon="fa-phone"
+                            invisible="direction != 'incoming'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_partner" type="object"
+                                class="oe_stat_button" icon="fa-user"
+                                invisible="not partner_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Khách hàng</span>
+                            </div>
+                        </button>
+                        <button name="action_create_partner" type="object"
+                                class="oe_stat_button" icon="fa-user-plus"
+                                invisible="partner_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Tạo KH</span>
+                            </div>
+                        </button>
+                    </div>
+                    <group>
+                        <group string="Thông tin cuộc gọi">
+                            <field name="direction"/>
+                            <field name="phone_number"/>
+                            <field name="caller_id"/>
+                            <field name="partner_id"/>
+                        </group>
+                        <group string="Thời gian">
+                            <field name="start_time"/>
+                            <field name="answer_time"/>
+                            <field name="end_time"/>
+                            <field name="duration_display"/>
+                            <field name="billsec"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Thông tin kỹ thuật">
+                            <field name="asterisk_user_id"/>
+                            <field name="channel"/>
+                            <field name="unique_id"/>
+                            <field name="linked_id"/>
+                        </group>
+                        <group string="Khác">
+                            <field name="transfer_to"/>
+                            <field name="recording_url" widget="url"/>
+                        </group>
+                    </group>
+                    <group string="Ghi chú">
+                        <field name="notes" nolabel="1" colspan="2"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Call Log List View -->
+    <record id="call_log_view_list" model="ir.ui.view">
+        <field name="name">asterisk.call.log.view.list</field>
+        <field name="model">asterisk.call.log</field>
+        <field name="arch" type="xml">
+            <list string="Lịch sử cuộc gọi" default_order="start_time desc">
+                <field name="start_time"/>
+                <field name="direction" widget="badge"
+                       decoration-info="direction == 'incoming'"
+                       decoration-success="direction == 'outgoing'"/>
+                <field name="phone_number"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'answered'"
+                       decoration-danger="state in ('busy', 'failed', 'no_answer')"
+                       decoration-warning="state in ('ringing', 'dialing')"
+                       decoration-info="state == 'transferred'"/>
+                <field name="duration_display"/>
+                <button name="action_callback" type="object" icon="fa-phone" 
+                        title="Gọi lại" class="btn-link"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Call Log Search View -->
+    <record id="call_log_view_search" model="ir.ui.view">
+        <field name="name">asterisk.call.log.view.search</field>
+        <field name="model">asterisk.call.log</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm cuộc gọi">
+                <field name="phone_number"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+<!--                <filter string="Cuộc gọi đến" name="incoming" domain="[('direction', '=', 'incoming')]"/>-->
+<!--                <filter string="Cuộc gọi đi" name="outgoing" domain="[('direction', '=', 'outgoing')]"/>-->
+<!--                <filter string="Đã trả lời" name="answered" domain="[('state', '=', 'answered')]"/>-->
+<!--                <filter string="Nhỡ" name="missed" domain="[('state', 'in', ['no_answer', 'busy'])]"/>-->
+<!--                <group expand="0" string="Nhóm theo">-->
+<!--                    <filter string="Hướng" name="group_direction" context="{'group_by': 'direction'}"/>-->
+<!--                    <filter string="Trạng thái" name="group_state" context="{'group_by': 'state'}"/>-->
+<!--                    <filter string="Người dùng" name="group_user" context="{'group_by': 'user_id'}"/>-->
+<!--                </group>-->
+            </search>
+        </field>
+    </record>
+
+    <!-- Call Log Kanban View -->
+    <record id="call_log_view_kanban" model="ir.ui.view">
+        <field name="name">asterisk.call.log.view.kanban</field>
+        <field name="model">asterisk.call.log</field>
+        <field name="arch" type="xml">
+            <kanban default_order="start_time desc">
+                <field name="id"/>
+                <field name="direction"/>
+                <field name="phone_number"/>
+                <field name="partner_id"/>
+                <field name="state"/>
+                <field name="start_time"/>
+                <field name="duration_display"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span t-if="record.direction.raw_value == 'incoming'" 
+                                  class="badge text-bg-info">
+                                <i class="fa fa-arrow-down"/> Đến
+                            </span>
+                            <span t-else="" class="badge text-bg-success">
+                                <i class="fa fa-arrow-up"/> Đi
+                            </span>
+                            <span t-att-class="'badge ' + 
+                                (record.state.raw_value == 'answered' ? 'text-bg-success' : 
+                                 record.state.raw_value in ['busy', 'failed', 'no_answer'] ? 'text-bg-danger' : 
+                                 'text-bg-warning')">
+                                <field name="state"/>
+                            </span>
+                        </div>
+                        <div class="mb-1">
+                            <strong>
+                                <i class="fa fa-phone me-1"/>
+                                <field name="phone_number"/>
+                            </strong>
+                        </div>
+                        <div t-if="record.partner_id.value" class="text-muted small">
+                            <i class="fa fa-user me-1"/>
+                            <field name="partner_id"/>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2 small text-muted">
+                            <span><field name="start_time"/></span>
+                            <span><i class="fa fa-clock-o me-1"/><field name="duration_display"/></span>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Call Log Action -->
+    <record id="call_log_action" model="ir.actions.act_window">
+        <field name="name">Lịch sử cuộc gọi</field>
+        <field name="res_model">asterisk.call.log</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Chưa có cuộc gọi nào
+            </p>
+            <p>
+                Lịch sử cuộc gọi sẽ được ghi lại khi bạn thực hiện hoặc nhận cuộc gọi
+            </p>
+        </field>
+    </record>
+
+    <!-- My Calls Action -->
+    <record id="call_log_my_action" model="ir.actions.act_window">
+        <field name="name">Cuộc gọi của tôi</field>
+        <field name="res_model">asterisk.call.log</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('user_id', '=', uid)]</field>
+    </record>
+</odoo>

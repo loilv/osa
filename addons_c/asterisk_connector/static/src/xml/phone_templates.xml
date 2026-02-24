@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Systray Phone Icon -->
+    <t t-name="asterisk_connector.SystrayPhone" owl="1">
+        <div class="o_asterisk_systray">
+            <div class="systray_phone_wrapper">
+                <!-- Status Selector Dropdown -->
+                <div class="status_selector_wrapper">
+                    <button class="status_trigger"
+                            t-on-click.stop="toggleStatusDropdown">
+                        <span class="status_label">Trạng thái</span>
+                        <span class="status_dot" t-att-style="'background:' + currentStatusOption.color"/>
+                        <span class="status_value" t-esc="currentStatusOption.label"/>
+                        <i class="fa fa-caret-down status_arrow"/>
+                    </button>
+                    
+                    <!-- Status Dropdown Menu -->
+                    <div class="status_dropdown" t-if="state.showStatusDropdown" t-on-click.stop="">
+                        <div class="status_options">
+                            <t t-foreach="statusOptions" t-as="opt" t-key="opt.value">
+                                <button class="status_option" 
+                                        t-att-class="{ active: state.currentStatus === opt.value }"
+                                        t-on-click.stop="() => changeStatus(opt.value)">
+                                    <span t-esc="opt.label"/>
+                                </button>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Phone Icon -->
+                <div class="o_nav_entry cursor-pointer phone_icon"
+                     t-att-class="{ 'has_active_call': hasActiveCall, 'has_incoming_call': hasIncomingCall }"
+                     t-on-click="toggleWidget">
+                    <i class="oi oi-large oi-voip"/>
+                    <span t-if="statePhone.activeCall or statePhone.incomingCall" class="incoming_indicator"/>
+                </div>
+            </div>
+            
+            <t>
+                <!-- Unified Phone Widget - handles all states -->
+                <PhoneWidget t-if="state.isOpen or statePhone.isWidgetOpen or statePhone.activeCall or statePhone.incomingCall"/>
+            </t>
+        </div>
+    </t>
+
+    <!-- Unified Phone Widget -->
+    <t t-name="asterisk_connector.PhoneWidget" owl="1">
+        <div class="o_phone_widget">
+            <!-- Header -->
+            <div class="phone_header">
+                <span class="phone_title">
+                    <i class="fa fa-phone me-2"/>Điện thoại
+                    <span t-if="serviceState.sipRegistered" class="sip_status online" title="SIP Đã kết nối">
+                        <i class="fa fa-circle"/>
+                    </span>
+                    <span t-elif="serviceState.userConfig and serviceState.userConfig.ws_enabled" class="sip_status connecting" title="Đang kết nối...">
+                        <i class="fa fa-spinner fa-spin"/>
+                    </span>
+                </span>
+                <span class="phone_close" t-on-click="closeWidget">
+                    <i class="fa fa-times"/>
+                </span>
+            </div>
+            
+            <!-- Incoming Call Banner -->
+            <div class="incoming_call_banner" t-if="statePhone.incomingCall">
+                <div class="incoming_info">
+                    <div class="incoming_icon">
+                        <i class="fa fa-phone fa-flip-horizontal"/>
+                    </div>
+                    <div class="incoming_details">
+                        <div class="incoming_label">
+                            <t t-if="isIPPhoneIncoming">Cuộc gọi đến (IP Phone)</t>
+                            <t t-else="">Cuộc gọi đến</t>
+                        </div>
+                        <div class="incoming_caller" t-esc="incomingCallerDisplay"/>
+                    </div>
+                </div>
+                <!-- Softphone mode: Answer/Reject buttons -->
+                <div class="incoming_actions" t-if="!isIPPhoneIncoming">
+                    <button class="incoming_btn reject" t-on-click="rejectIncomingCall" title="Từ chối">
+                        <i class="fa fa-times"/>
+                    </button>
+                    <button class="incoming_btn accept" t-on-click="answerIncomingCall" title="Trả lời">
+                        <i class="fa fa-phone"/>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Active Call Panel -->
+            <div class="active_call_section" t-if="serviceState.activeCall">
+                <div class="active_call_info">
+                    <div class="call_avatar">
+                        <t t-if="serviceState.activeCall.partner and serviceState.activeCall.partner.image">
+                            <img t-att-src="serviceState.activeCall.partner.image" alt="Caller"/>
+                        </t>
+                        <t t-else="">
+                            <i class="fa fa-user"/>
+                        </t>
+                    </div>
+                    <div class="call_details">
+                        <div class="call_name" t-esc="activeCallerName"/>
+                        <div class="call_number" t-esc="serviceState.activeCall.phoneNumber"/>
+                        <div class="call_timer" t-att-class="{ 'dialing': isDialing }" t-esc="callStatusText"/>
+                    </div>
+                    <div class="call_status_badges">
+                        <span t-if="isDialing" class="status_badge dialing"><i class="fa fa-phone fa-flip-horizontal"/> Đang gọi</span>
+                        <span t-if="state.isOnHold" class="status_badge hold"><i class="fa fa-pause"/> Giữ máy</span>
+                        <span t-if="state.isMuted" class="status_badge muted"><i class="fa fa-microphone-slash"/> Tắt mic</span>
+                    </div>
+                </div>
+                
+                <div class="active_call_controls">
+                    <button class="call_ctrl_btn" t-att-class="{ active: state.isMuted }" 
+                            t-on-click="toggleMute" title="Tắt/Bật mic">
+                        <i t-att-class="state.isMuted ? 'fa fa-microphone-slash' : 'fa fa-microphone'"/>
+                    </button>
+                    <button class="call_ctrl_btn" t-att-class="{ active: state.isOnHold }"
+                            t-on-click="toggleHold" title="Giữ máy">
+                        <i class="fa fa-pause"/>
+                    </button>
+                    <button class="call_ctrl_btn" t-att-class="{ active: state.showInCallDialpad }"
+                            t-on-click="toggleInCallDialpad" title="Bàn phím">
+                        <i class="fa fa-th"/>
+                    </button>
+                    <button class="call_ctrl_btn hangup" t-on-click="hangupActiveCall" title="Kết thúc">
+                        <i class="fa fa-phone fa-rotate-135"/>
+                    </button>
+                    <button class="call_ctrl_btn" t-att-class="{ active: state.showTransferPanel }"
+                            t-on-click="toggleTransferPanel" title="Chuyển cuộc gọi">
+                        <i class="fa fa-exchange"/>
+                    </button>
+                </div>
+                
+                <!-- In-call Dialpad -->
+                <div class="in_call_dialpad" t-if="state.showInCallDialpad">
+                    <div class="dialpad_grid">
+                        <t t-foreach="state.dialpadKeys" t-as="key" t-key="key.main">
+                            <button class="dialpad_key" t-on-click="() => this.sendDTMF(key.main)">
+                                <span class="key_main" t-esc="key.main"/>
+                                <span class="key_sub" t-esc="key.sub"/>
+                            </button>
+                        </t>
+                    </div>
+                </div>
+                
+                <!-- Transfer Panel -->
+                <div class="transfer_panel" t-if="state.showTransferPanel">
+                    <input type="text" class="transfer_input" 
+                           t-model="state.transferSearch"
+                           placeholder="Nhập số hoặc tìm extension..."/>
+                    <div class="transfer_list">
+                        <t t-foreach="filteredExtensions" t-as="ext" t-key="ext.id">
+                            <div class="transfer_item" t-on-click="() => this.transferTo(ext.extension)">
+                                <span class="transfer_ext" t-esc="ext.extension"/>
+                                <span class="transfer_name" t-esc="ext.user_name"/>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="phone_tabs" t-if="!serviceState.activeCall">
+                <div class="phone_tab" t-att-class="{ active: state.activeTab === 'dialpad' }"
+                     t-on-click="onTabDialpad">
+                    <i class="fa fa-th"/>
+                </div>
+                <div class="phone_tab" t-att-class="{ active: state.activeTab === 'history' }"
+                     t-on-click="onTabHistory">
+                    <i class="fa fa-history"/>
+                </div>
+                <div class="phone_tab" t-att-class="{ active: state.activeTab === 'transfer' }"
+                     t-on-click="onTabTransfer">
+                    <i class="fa fa-exchange"/>
+                </div>
+                <div class="phone_tab" t-att-class="{ active: state.activeTab === 'settings' }"
+                     t-on-click="onTabSettings">
+                    <i class="fa fa-cog"/>
+                </div>
+            </div>
+            
+            <!-- Dialpad Tab -->
+            <div class="phone_dialpad" t-if="state.activeTab === 'dialpad' and !serviceState.activeCall">
+                <div class="phone_input_wrapper">
+                    <input type="text" class="phone_number_input" 
+                           t-ref="phoneInput"
+                           t-att-value="state.phoneNumber"
+                           t-on-input="onPhoneInputChange"
+                           placeholder="Nhập số điện thoại"/>
+                    <button class="input_clear_btn" t-if="state.phoneNumber" t-on-click="onBackspace">
+                        <i class="oi oi-backspace-o"/>
+                    </button>
+                </div>
+                
+                <!-- Dialpad Toggle -->
+                <div class="dialpad_toggle" t-on-click="toggleDialpad">
+                    <i t-att-class="state.showDialpad ? 'fa fa-chevron-up' : 'fa fa-chevron-down'"/>
+                    <span t-esc="state.showDialpad ? 'Ẩn bàn phím' : 'Hiện bàn phím'"/>
+                </div>
+                
+                <div class="dialpad_keys" t-if="state.showDialpad">
+                    <button class="dialpad_key" t-on-click="onKey1">
+                        <span class="key_number">1</span>
+                        <span class="key_letters"></span>
+                    </button>
+                    <button class="dialpad_key" t-on-click="onKey2">
+                        <span class="key_number">2</span>
+                        <span class="key_letters">ABC</span>
+                    </button>
+                    <button class="dialpad_key" t-on-click="onKey3">
+                        <span class="key_number">3</span>
+                        <span class="key_letters">DEF</span>
+                    </button>
+                    <button class="dialpad_key" t-on-click="onKey4">
+                        <span class="key_number">4</span>
+                        <span class="key_letters">GHI</span>
+                    </button>
+                    <button class="dialpad_key" t-on-click="onKey5">
+                        <span class="key_number">5</span>
+                        <span class="key_letters">JKL</span>
+                    </button>
+                    <button class="dialpad_key" t-on-click="onKey6">
+                        <span class="key_number">6</span>
+                        <span class="key_letters">MNO</span>
+                    </button>
+                    <button class="dialpad_key" t-on-click="onKey7">
+                        <span class="key_number">7</span>
+                        <span class="key_letters">PQRS</span>
+                    </button>
+                    <button class="dialpad_key" t-on-click="onKey8">
+                        <span class="key_number">8</span>
+                        <span class="key_letters">TUV</span>
+                    </button>
+                    <button class="dialpad_key" t-on-click="onKey9">
+                        <span class="key_number">9</span>
+                        <span class="key_letters">WXYZ</span>
+                    </button>
+                    <button class="dialpad_key" t-on-click="onKeyStar">
+                        <span class="key_number">*</span>
+                    </button>
+                    <button class="dialpad_key" t-on-click="onKey0">
+                        <span class="key_number">0</span>
+                        <span class="key_letters">+</span>
+                    </button>
+                    <button class="dialpad_key" t-on-click="onKeyHash">
+                        <span class="key_number">#</span>
+                    </button>
+                </div>
+                
+                <!-- Call type selector -->
+                <div class="call_type_selector" t-if="serviceState.userConfig and serviceState.userConfig.call_type === 'both'">
+                    <label class="call_type_option">
+                        <input type="radio" name="call_type" value="softphone" 
+                               t-att-checked="state.selectedCallType === 'softphone'"
+                               t-on-change="() => this.state.selectedCallType = 'softphone'"/>
+                        <span><i class="fa fa-headphones me-1"/>Softphone</span>
+                    </label>
+                    <label class="call_type_option">
+                        <input type="radio" name="call_type" value="ipphone"
+                               t-att-checked="state.selectedCallType === 'ipphone'"
+                               t-on-change="() => this.state.selectedCallType = 'ipphone'"/>
+                        <span><i class="fa fa-phone me-1"/>IP Phone</span>
+                    </label>
+                </div>
+                
+                <div class="dialpad_actions">
+                    <button class="action_btn call_btn" t-on-click="makeCall" t-att-disabled="!state.phoneNumber">
+                        <i class="fa fa-phone"/>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- History Tab -->
+            <div class="phone_history" t-if="state.activeTab === 'history'">
+                <t t-if="serviceState.callHistory.length > 0">
+                    <t t-foreach="serviceState.callHistory" t-as="item" t-key="item.id">
+                        <div class="history_item" t-att-data-phone="item.phone_number" t-on-click="onHistoryItemClick">
+                            <div class="history_avatar">
+                                <t t-if="item.partner_id">
+                                    <img t-att-src="'/web/image/res.partner/' + item.partner_id + '/avatar_128'" 
+                                         alt="Avatar"/>
+                                </t>
+                                <t t-else="">
+                                    <i class="fa fa-user"/>
+                                </t>
+                            </div>
+                            <div class="history_info">
+                                <div class="history_name">
+                                    <t t-esc="item.partner_name || item.phone_number"/>
+                                </div>
+                                <div class="history_meta">
+                                    <i t-att-class="'fa ' + getDirectionIcon(item) + ' ' + getDirectionClass(item)"/>
+                                    <span t-esc="formatDateTime(item.start_time)"/>
+                                    <span t-if="item.duration_display">
+                                        <i class="fa fa-clock-o ms-1"/>
+                                        <t t-esc="item.duration_display"/>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="history_action">
+                                <i class="fa fa-phone"/>
+                            </div>
+                        </div>
+                    </t>
+                </t>
+                <t t-else="">
+                    <div class="history_empty">
+                        <i class="fa fa-phone-slash"/>
+                        <p>Chưa có lịch sử cuộc gọi</p>
+                    </div>
+                </t>
+            </div>
+            
+            <!-- Transfer Tab -->
+            <div class="phone_transfer" t-if="state.activeTab === 'transfer' and !serviceState.activeCall">
+                <input type="text" class="transfer_search" 
+                       t-model="state.transferSearch"
+                       placeholder="Tìm kiếm extension..."/>
+                
+                <div class="extension_list">
+                    <t t-if="serviceState.extensions.length > 0">
+                        <t t-foreach="filteredExtensions" t-as="ext" t-key="ext.id">
+                            <div class="extension_item" t-att-data-ext="ext.extension" t-on-click="onExtensionClick">
+                                <div class="ext_number">
+                                    <t t-esc="ext.extension"/>
+                                </div>
+                                <div class="ext_info">
+                                    <div class="ext_name" t-esc="ext.user_name"/>
+                                    <div class="ext_channel" t-esc="ext.channel"/>
+                                </div>
+                            </div>
+                        </t>
+                    </t>
+                    <t t-else="">
+                        <div class="extension_empty">
+                            <i class="fa fa-users"/>
+                            <p>Không có extension khả dụng</p>
+                        </div>
+                    </t>
+                </div>
+            </div>
+            
+            <!-- Settings Tab - Compact -->
+            <div class="phone_settings_compact" t-if="state.activeTab === 'settings' and !serviceState.activeCall">
+                <!-- Extension Selection -->
+                <div class="settings_row" t-if="state.availableExtensions.length > 0">
+                    <label class="settings_label">
+                        <i class="fa fa-phone-square"/>
+                        Extension
+                    </label>
+                    <select class="settings_select" t-on-change="onExtensionSelectFromDropdown">
+                        <option value="" t-if="!serviceState.userConfig?.extension">-- Chọn extension --</option>
+                        <t t-foreach="state.availableExtensions" t-as="ext" t-key="ext.extension">
+                            <option t-att-value="ext.extension" 
+                                    t-att-selected="state.selectedExtension === ext.extension"
+                                    t-esc="ext.extension + ' - ' + ext.server_name"/>
+                        </t>
+                    </select>
+                </div>
+                
+                <!-- No Extension Message -->
+                <div class="settings_alert warning" t-if="state.availableExtensions.length === 0">
+                    <i class="fa fa-exclamation-triangle"/>
+                    <span>Chưa có extension. Vui lòng liên hệ admin.</span>
+                </div>
+                
+                <!-- Call Type Selection -->
+                <div class="settings_row">
+                    <label class="settings_label">
+                        <i class="fa fa-headphones"/>
+                        Loại gọi
+                    </label>
+                    <div class="settings_toggle">
+                        <button class="toggle_btn" 
+                                t-att-class="{ active: state.preferredCallType === 'softphone' }"
+                                t-on-click="() => onPreferredCallTypeChange('softphone')"
+                                title="Softphone (WebRTC)">
+                            <i class="fa fa-headphones"/>
+                        </button>
+                        <button class="toggle_btn" 
+                                t-att-class="{ active: state.preferredCallType === 'ipphone' }"
+                                t-on-click="() => onPreferredCallTypeChange('ipphone')"
+                                title="IP Phone">
+                            <i class="fa fa-phone"/>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Save Button -->
+                <button class="settings_save_compact" t-on-click="saveSettings">
+                    <i class="fa fa-save"/> Lưu
+                </button>
+            </div>
+        </div>
+    </t>
+
+</templates>

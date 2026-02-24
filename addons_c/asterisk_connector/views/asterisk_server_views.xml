@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Asterisk Server Form View -->
+    <record id="asterisk_server_view_form" model="ir.ui.view">
+        <field name="name">asterisk.server.view.form</field>
+        <field name="model">asterisk.server</field>
+        <field name="arch" type="xml">
+            <form string="Asterisk Server">
+                <header>
+                    <button name="action_test_connection" type="object" 
+                            string="Kiểm tra kết nối" class="btn-secondary"
+                            icon="fa-plug"/>
+                    <field name="state" widget="statusbar" 
+                           statusbar_visible="disconnected,connected"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="%(asterisk_user_action)d" type="action"
+                                class="oe_stat_button" icon="fa-users">
+                            <field name="user_ids" widget="statinfo" string="Users"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Tên Server"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Kết nối AMI">
+                            <field name="host"/>
+                            <field name="ami_port"/>
+                            <field name="ami_username"/>
+                            <field name="ami_password" password="True"/>
+                            <field name="use_ssl"/>
+                        </group>
+                        <group string="Kết nối ARI (Tùy chọn)">
+                            <field name="ari_port"/>
+                            <field name="ari_username"/>
+                            <field name="ari_password" password="True"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Cấu hình Context">
+                            <field name="context_outgoing"/>
+                            <field name="context_incoming"/>
+                        </group>
+                        <group string="Thông tin khác">
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active"/>
+                            <field name="last_connection"/>
+                        </group>
+                    </group>
+                    <group string="WebRTC/WebSocket (Softphone)">
+                        <group>
+                            <field name="ws_enabled"/>
+                            <field name="ws_port" invisible="not ws_enabled"/>
+                            <field name="ws_path" invisible="not ws_enabled"/>
+                        </group>
+                        <group>
+                            <p class="text-muted" invisible="not ws_enabled">
+                                Cấu hình WebSocket để softphone có thể đăng ký SIP trực tiếp với Asterisk.
+                                Đảm bảo Asterisk đã bật WebSocket trong http.conf hoặc pjsip.conf.
+                            </p>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Asterisk Server List View -->
+    <record id="asterisk_server_view_list" model="ir.ui.view">
+        <field name="name">asterisk.server.view.list</field>
+        <field name="model">asterisk.server</field>
+        <field name="arch" type="xml">
+            <list string="Asterisk Servers">
+                <field name="name"/>
+                <field name="host"/>
+                <field name="ami_port"/>
+                <field name="ami_username"/>
+                <field name="state" widget="badge" 
+                       decoration-success="state == 'connected'"
+                       decoration-danger="state == 'error'"
+                       decoration-warning="state == 'disconnected'"/>
+                <field name="last_connection"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Asterisk Server Action -->
+    <record id="asterisk_server_action" model="ir.actions.act_window">
+        <field name="name">Asterisk Servers</field>
+        <field name="res_model">asterisk.server</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Thêm Asterisk Server
+            </p>
+            <p>
+                Cấu hình kết nối tới hệ thống tổng đài Asterisk PBX
+            </p>
+        </field>
+    </record>
+</odoo>

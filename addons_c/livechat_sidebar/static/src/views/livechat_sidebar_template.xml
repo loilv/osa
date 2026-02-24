@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+
+    <t t-name="livechat_sidebar.LivechatSidebarDiscuss">
+        <div class="o_livechat_sidebar_container d-flex h-100">
+            <LivechatSessionList
+                sessions="state.sessions"
+                loading="state.loading"
+                currentSessionId="props.record.resId"
+                onSessionClick.bind="onSessionClick"
+                onSearchInput.bind="onSearchInput"
+                onNewChat.bind="onNewChat"
+                searchQuery="state.searchQuery"
+            />
+            <div class="o_livechat_main_content flex-grow-1 h-100 overflow-hidden position-relative" t-ref="mainContent">
+                <t t-if="thread">
+                    <Discuss hasSidebar="false" thread="thread"/>
+                </t>
+                <t t-else="">
+                    <div class="d-flex h-100 flex-column justify-content-center align-items-center">
+                        <span class="fs-1">No conversation found</span>
+                        <button type="button" class="btn btn-primary mt-3" t-on-click="redirectToSessions">
+                            Go to Sessions
+                        </button>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="livechat_sidebar.LivechatSessionList">
+        <div class="o_livechat_session_sidebar d-flex flex-column h-100">
+            <div class="o_sidebar_header px-3 py-2 border-bottom d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-bold text-uppercase small text-muted">
+                    <i class="fa fa-comments me-1"/>Trò chuyện của tôi
+                </h6>
+                <button type="button"
+                        class="o_new_chat_btn btn btn-sm btn-outline-primary rounded-circle d-flex align-items-center justify-content-center p-0"
+                        style="width: 26px; height: 26px; font-size: 13px;"
+                        title="Trò chuyện mới"
+                        t-on-click="onNewChatClick">
+                    <i class="fa fa-plus"/>
+                </button>
+            </div>
+            <div class="o_sidebar_search px-3 py-2 border-bottom">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-transparent border-end-0">
+                        <i class="fa fa-search text-muted"/>
+                    </span>
+                    <input type="text"
+                           class="form-control border-start-0"
+                           placeholder="Search sessions..."
+                           t-att-value="props.searchQuery"
+                           t-on-input="onSearchChange"/>
+                </div>
+            </div>
+            <div class="o_sidebar_sessions_list flex-grow-1 overflow-auto">
+                <t t-if="props.loading">
+                    <div class="d-flex justify-content-center align-items-center p-4">
+                        <i class="fa fa-spinner fa-spin fa-2x text-muted"/>
+                    </div>
+                </t>
+                <t t-else="">
+                    <t t-if="!props.sessions.length">
+                        <div class="text-center text-muted p-3 small">
+                            No active sessions
+                        </div>
+                    </t>
+                    <t t-foreach="props.sessions" t-as="session" t-key="session.id">
+                        <div t-att-class="'o_sidebar_session_item d-flex align-items-start px-3 py-2 cursor-pointer border-bottom ' + (session.id === props.currentSessionId ? 'o_active' : '') + (!session.agent_replied and !session.is_closed ? ' o_unreplied' : '')"
+                             t-on-click="() => props.onSessionClick(session.id)">
+                            <div class="o_session_avatar me-2 mt-1 position-relative flex-shrink-0">
+                                <span class="o_session_avatar_icon rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                                      style="width: 36px; height: 36px; font-size: 14px;">
+                                    <t t-esc="session.visitor_name ? session.visitor_name[0].toUpperCase() : 'V'"/>
+                                </span>
+                                <span t-att-class="'o_session_status_dot position-absolute rounded-circle border border-white ' + getStatusIcon(session)"
+                                      style="width: 10px; height: 10px; bottom: -1px; right: -1px; background: currentColor;"
+                                      t-att-title="getStatusLabel(session)"/>
+                            </div>
+                            <div class="o_session_info flex-grow-1 min-w-0 overflow-hidden">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span t-att-class="'o_session_visitor_name small text-truncate ' + (!session.agent_replied and !session.is_closed ? 'fw-bold' : 'fw-semibold')">
+                                        <t t-esc="session.visitor_name"/>
+                                    </span>
+                                    <div class="d-flex align-items-center ms-1 flex-shrink-0">
+                                        <t t-if="!session.agent_replied and !session.is_closed">
+                                            <span class="badge rounded-pill bg-danger me-1" style="font-size: 9px; padding: 2px 5px;">New</span>
+                                        </t>
+                                        <span class="o_session_time text-muted" style="font-size: 11px;">
+                                            <t t-esc="formatTime(session.last_message_date || session.create_date)"/>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div t-att-class="'o_session_preview small text-truncate ' + (!session.agent_replied and !session.is_closed ? 'text-body' : 'text-muted')" style="font-size: 12px;">
+                                    <t t-if="session.is_closed">
+                                        <i class="fa fa-check-circle me-1 text-muted" style="font-size: 10px;"/>
+                                    </t>
+                                    <t t-esc="truncate(session.last_message_body)"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </t>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="livechat_sidebar.NewChatDialog">
+        <Dialog size="'sm'" title="'Trò chuyện mới'">
+            <div class="mb-3">
+                <label for="newChatPhone" class="form-label fw-semibold">Số điện thoại</label>
+                <div class="input-group">
+                    <input id="newChatPhone"
+                           type="tel"
+                           class="form-control"
+                           placeholder="e.g. 0901234567"
+                           t-att-value="state.phone"
+                           t-on-input="onPhoneInput"
+                           t-on-keydown="onKeydown"
+                           t-att-disabled="state.loading or state.zaloLoading"/>
+                    <button class="btn btn-outline-primary"
+                            type="button"
+                            t-on-click="onFetchZaloInfo"
+                            t-att-disabled="!state.phone or state.zaloLoading or state.loading"
+                            title="Lấy thông tin Zalo">
+                        <t t-if="state.zaloLoading">
+                            <i class="fa fa-spinner fa-spin"/>
+                        </t>
+                        <t t-else="">
+                            <i class="fa fa-search me-1"/>Zalo
+                        </t>
+                    </button>
+                </div>
+                <div t-if="state.error" class="text-danger small mt-1">
+                    <t t-esc="state.error"/>
+                </div>
+            </div>
+            <t t-if="state.zaloInfo">
+                <div class="o_zalo_user_info_card mb-3">
+                    <div class="d-flex align-items-center gap-3 p-3 border rounded bg-light">
+                        <div class="o_zalo_avatar flex-shrink-0">
+                            <t t-if="state.zaloInfo.avatar">
+                                <img t-att-src="state.zaloInfo.avatar"
+                                     class="rounded-circle"
+                                     style="width: 48px; height: 48px; object-fit: cover;"
+                                     alt="Avatar"/>
+                            </t>
+                            <t t-else="">
+                                <span class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                                      style="width: 48px; height: 48px; font-size: 20px;">
+                                    <i class="fa fa-user"/>
+                                </span>
+                            </t>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold" t-esc="state.zaloInfo.display_name"/>
+                            <div class="text-muted small">
+                                <i class="fa fa-phone me-1"/>
+                                <t t-esc="state.zaloInfo.phone"/>
+                            </div>
+                            <div class="text-muted small" t-if="state.zaloInfo.zalo_id">
+                                Zalo ID: <t t-esc="state.zaloInfo.zalo_id"/>
+                            </div>
+                            <div class="mt-1">
+                                <t t-if="state.zaloInfo.is_friend">
+                                    <span class="badge bg-success"><i class="fa fa-check me-1"/>Bạn bè</span>
+                                </t>
+                                <t t-else="">
+                                    <span class="badge bg-secondary"><i class="fa fa-user-plus me-1"/>Chưa kết bạn</span>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+            <t t-if="state.zaloError">
+                <div class="alert alert-warning small py-2 mb-3">
+                    <i class="fa fa-exclamation-triangle me-1"/>
+                    <t t-esc="state.zaloError"/>
+                </div>
+            </t>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary" t-on-click="onConfirm" t-att-disabled="state.loading">
+                    <t t-if="state.loading">
+                        <i class="fa fa-spinner fa-spin me-1"/>
+                    </t>
+                    Create
+                </button>
+                <button class="btn btn-secondary" t-on-click="props.close" t-att-disabled="state.loading">
+                    Cancel
+                </button>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>

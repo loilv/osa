@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Asterisk User Group -->
+    <record id="group_asterisk_user" model="res.groups">
+        <field name="name">Asterisk User</field>
+    </record>
+
+    <!-- Asterisk Manager Group -->
+    <record id="group_asterisk_manager" model="res.groups">
+        <field name="name">Asterisk Manager</field>
+        <field name="implied_ids" eval="[(4, ref('group_asterisk_user'))]"/>
+    </record>
+
+    <!-- Record Rules -->
+    
+    <!-- Call Log: Users can only see their own calls -->
+    <record id="call_log_user_rule" model="ir.rule">
+        <field name="name">Call Log: User can see own calls</field>
+        <field name="model_id" ref="model_asterisk_call_log"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_asterisk_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Call Log: Managers can see all calls -->
+    <record id="call_log_manager_rule" model="ir.rule">
+        <field name="name">Call Log: Manager can see all calls</field>
+        <field name="model_id" ref="model_asterisk_call_log"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_asterisk_manager'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Asterisk User: Users can only see their own config -->
+    <record id="asterisk_user_user_rule" model="ir.rule">
+        <field name="name">Asterisk User: User can see own config</field>
+        <field name="model_id" ref="model_asterisk_user"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_asterisk_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Asterisk User: Managers can manage all -->
+    <record id="asterisk_user_manager_rule" model="ir.rule">
+        <field name="name">Asterisk User: Manager can manage all</field>
+        <field name="model_id" ref="model_asterisk_user"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_asterisk_manager'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Server: Only managers can access -->
+    <record id="asterisk_server_manager_rule" model="ir.rule">
+        <field name="name">Asterisk Server: Manager only</field>
+        <field name="model_id" ref="model_asterisk_server"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_asterisk_manager'))]"/>
+    </record>
+</odoo>
