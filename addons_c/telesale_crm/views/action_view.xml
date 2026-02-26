@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="crm.crm_lead_action_pipeline_view_kanban" model="ir.actions.act_window.view">
+            <field name="sequence" eval="999"/>
+        </record>
+
+        <record id="crm.crm_lead_action_pipeline_view_tree" model="ir.actions.act_window.view">
+            <field name="sequence" eval="0"/>
+            <field name="view_id" ref="crm_oppo_list_view"/>
+        </record>
+
+        <record id="crm_oppo_form_view_setup" model="ir.actions.act_window.view">
+            <field name="sequence" eval="2"/>
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="telesale_crm.crm_oppo_view_form"/>
+            <field name="act_window_id" ref="crm.crm_lead_action_pipeline"/>
+        </record>
+
+    </data>
+</odoo>

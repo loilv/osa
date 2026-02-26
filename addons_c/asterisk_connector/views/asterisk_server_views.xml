@@ -50,6 +50,17 @@
                             <field name="last_connection"/>
                         </group>
                     </group>
+                    <group string="Ghi âm">
+                        <group>
+                            <field name="recording_base_url" placeholder="https://domain.com/recordings"/>
+                        </group>
+                        <group>
+                            <p class="text-muted">
+                                URL gốc để truy cập file ghi âm cuộc gọi từ Asterisk.
+                                File ghi âm sẽ được lưu tại: [Base URL]/[filename].wav
+                            </p>
+                        </group>
+                    </group>
                     <group string="WebRTC/WebSocket (Softphone)">
                         <group>
                             <field name="ws_enabled"/>

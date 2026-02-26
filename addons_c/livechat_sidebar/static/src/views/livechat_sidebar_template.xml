@@ -166,6 +166,9 @@
                                 <t t-if="state.zaloInfo.is_friend">
                                     <span class="badge bg-success"><i class="fa fa-check me-1"/>Bạn bè</span>
                                 </t>
+                                <t t-elif="state.zaloInfo.friend_request_sent">
+                                    <span class="badge bg-info text-dark"><i class="fa fa-paper-plane me-1"/>Đã gửi lời mời kết bạn</span>
+                                </t>
                                 <t t-else="">
                                     <span class="badge bg-secondary"><i class="fa fa-user-plus me-1"/>Chưa kết bạn</span>
                                 </t>
@@ -185,10 +188,10 @@
                     <t t-if="state.loading">
                         <i class="fa fa-spinner fa-spin me-1"/>
                     </t>
-                    Create
+                    Tạo cuộc trò chuyện
                 </button>
                 <button class="btn btn-secondary" t-on-click="props.close" t-att-disabled="state.loading">
-                    Cancel
+                    Hủy
                 </button>
             </t>
         </Dialog>

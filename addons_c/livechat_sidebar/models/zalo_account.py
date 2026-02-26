@@ -189,6 +189,30 @@ class DiscussChannel(models.Model):
                 return member.partner_id
         return self.env['res.partner']
 
+    # Error codes / keywords returned by zca-js bridge when recipient blocks strangers
+    _ZALO_BLOCK_STRANGER_INDICATORS = (
+        'block_stranger',
+        'stranger',
+        'blocked',
+        'not friend',
+        'not_friend',
+        '-501',
+        '501',
+        '122',
+        'cannot send',
+        'người lạ',
+        'chặn',
+    )
+
+    def _is_zalo_block_stranger_error(self, result):
+        """Return True if bridge result indicates the recipient blocks strangers."""
+        if result.get('success'):
+            return False
+        err = str(result.get('error', '')).lower()
+        code = str(result.get('errorCode', result.get('error_code', ''))).lower()
+        combined = err + ' ' + code
+        return any(kw in combined for kw in self._ZALO_BLOCK_STRANGER_INDICATORS)
+
     def _forward_to_zalo(self, message):
         try:
             text = html2plaintext(message.body or '').strip()
@@ -220,15 +244,24 @@ class DiscussChannel(models.Model):
                 payload['quote'] = quote
 
             if attachments or text:
-                self.zalo_account_id._call_bridge(
+                result = self.zalo_account_id._call_bridge(
                     'send-message',
                     method='POST',
                     data=payload,
                 )
                 _logger.info(
-                    'Forwarded to Zalo thread %s: text=%s atts=%d quote=%s',
+                    'Forwarded to Zalo thread %s: text=%s atts=%d quote=%s result=%s',
                     self.zalo_thread_id, text[:50] if text else '',
-                    len(attachments), bool(quote),
+                    len(attachments), bool(quote), result,
                 )
+                if self._is_zalo_block_stranger_error(result):
+                    _logger.warning(
+                        'Zalo thread %s: recipient blocks strangers', self.zalo_thread_id,
+                    )
+                    self.with_context(from_zalo_webhook=True).message_post(
+                        body='⚠️ Không thể gửi tin nhắn Zalo: người dùng này đang chặn tin nhắn từ người lạ',
+                        message_type='notification',
+                        subtype_xmlid='mail.mt_note',
+                    )
         except Exception as e:
             _logger.error('Failed to forward to Zalo: %s', e)

@@ -184,6 +184,12 @@ export class LivechatSidebarFormRenderer extends FormRenderer {
                 if (result.error) {
                     throw new Error(result.error);
                 }
+                if (result.existing) {
+                    this.notificationService.add(
+                        "Đã tồn tại cuộc trò chuyện đang mở với số điện thoại này.",
+                        { type: "info" }
+                    );
+                }
                 await this.loadSessions();
                 await this.onSessionClick(result.channel_id);
             },

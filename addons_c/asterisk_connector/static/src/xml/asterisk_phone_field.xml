@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="asterisk_connector.AsteriskPhoneField" owl="1">
+        <!-- data-tooltip="" suppresses Odoo's default tooltip that would show the raw unmasked value -->
+        <div class="o_asterisk_phone_field d-inline-flex align-items-center w-100" data-tooltip="">
+            <t t-if="props.readonly">
+                <!-- Readonly mode (list + form): always show masked number + call button -->
+                <span t-if="phoneValue"
+                      class="o_asterisk_phone_number"
+                      t-esc="maskedPhone"/>
+                <button t-if="phoneValue"
+                        class="o_asterisk_call_btn"
+                        title=""
+                        t-on-click="onCallClick">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+                        <polyline points="16 2 22 2 22 8"/>
+                        <line x1="17" y1="7" x2="22" y2="2"/>
+                    </svg>
+                </button>
+            </t>
+            <t t-else="">
+                <!-- Edit mode (form view): hidden real input for useInputField hook + masked display -->
+                <input
+                    t-att-class="'o_input flex-grow-1' + (phoneValue ? ' d-none' : '')"
+                    t-att-id="props.id"
+                    type="tel"
+                    autocomplete="off"
+                    t-att-placeholder="props.placeholder"
+                    t-ref="input"
+                    title=""
+                />
+                <!-- Masked display when has value -->
+                <span t-if="phoneValue" class="o_asterisk_phone_number flex-grow-1" t-esc="maskedPhone"/>
+                <!-- Call button -->
+                <button t-if="phoneValue"
+                        class="o_asterisk_call_btn ms-1"
+                        title=""
+                        t-on-click="onCallClick">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+                        <polyline points="16 2 22 2 22 8"/>
+                        <line x1="17" y1="7" x2="22" y2="2"/>
+                    </svg>
+                </button>
+            </t>
+        </div>
+    </t>
+
+</templates>

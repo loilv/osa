@@ -72,7 +72,8 @@ export class PhoneWidget extends Component {
 
         this.phoneInputRef = useRef("phoneInput");
         this.timerInterval = null;
-        this._lastActiveCallState = null;
+        // Track previous call data for detecting auto-ended calls
+        this._lastActiveCallData = null;
 
         onMounted(() => {
             // Start timer if there's already an active call
@@ -81,15 +82,27 @@ export class PhoneWidget extends Component {
             }
             // Check for active call changes periodically
             this._checkCallStateInterval = setInterval(() => {
-                const hasActiveCall = !!this.serviceState.activeCall;
-                if (hasActiveCall && !this._lastActiveCallState) {
-                    // Call just became active - start timer
-                    this.startCallTimer();
-                } else if (!hasActiveCall && this._lastActiveCallState) {
-                    // Call just ended - stop timer
+                const activeCall = this.serviceState.activeCall;
+                if (activeCall) {
+                    // Call is active — keep tracking its data
+                    if (!this._lastActiveCallData) {
+                        this.startCallTimer();
+                    }
+                    this._lastActiveCallData = {
+                        callLogId: activeCall.callLogId,
+                        direction: activeCall.direction,
+                    };
+                } else if (this._lastActiveCallData) {
+                    // Call just ended automatically (other party hung up / AMI event)
+                    const lastCall = this._lastActiveCallData;
+                    this._lastActiveCallData = null;
                     this.stopCallTimer();
+                    this.state.isMuted = false;
+                    this.state.isOnHold = false;
+                    this.state.showTransferPanel = false;
+                    this.state.showInCallDialpad = false;
+                    this.state.activeTab = "dialpad";
                 }
-                this._lastActiveCallState = hasActiveCall;
             }, 500);
         });
 
@@ -421,6 +434,8 @@ export class PhoneWidget extends Component {
 
     async hangupActiveCall() {
         const channel = this.serviceState.activeCall?.channel;
+        // Clear tracked data so _checkCallStateInterval doesn't double-trigger
+        this._lastActiveCallData = null;
         await this.phoneService.hangupCall(channel);
         this.stopCallTimer();
         this.state.isMuted = false;
@@ -495,17 +510,10 @@ export class PhoneWidget extends Component {
 
     get callStatusText() {
         if (!this.serviceState.activeCall) {
-            this.stopCallTimer();
-            this.state.isMuted = false;
-            this.state.isOnHold = false;
-            this.state.showTransferPanel = false;
-            this.state.showInCallDialpad = false;
-            // Return to dialpad tab
-            this.state.activeTab = "dialpad";
             return;
         }
         if (this.isDialing) {
-            this.startCallTimer()
+            this.startCallTimer();
         }
         return this.formattedTimer;
     }

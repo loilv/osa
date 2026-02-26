@@ -5,7 +5,7 @@
         <field name="name">discuss.channel.list</field>
         <field name="model">discuss.channel</field>
         <field name="arch" type="xml">
-            <list js_class="im_livechat.discuss_channel_list" sample="1" string="History" create="false"
+            <list js_class="im_livechat.discuss_channel_list" sample="1" string="History"
                   default_order="create_date desc, id desc">
                 <field name="create_date" string="Date"/>
                 <field name="name" string="Khách hàng" optional="show"/>

@@ -108,46 +108,65 @@ class AsteriskController(http.Controller):
                      config.get('ws_enabled'), bool(config.get('sip_password')), config.get('ws_url'))
         return {'success': True, 'data': config}
 
+    @http.route('/asterisk/events', type='http', auth='none', csrf=False, methods=['POST'])
+    def ami_events_http(self, **kwargs):
+        """
+        HTTP endpoint nhận event từ AMI Listener service.
+        Accepts plain JSON POST: {"event": "...", "data": {...}}
+        """
+        try:
+            body = json.loads(request.httprequest.data)
+        except (json.JSONDecodeError, TypeError):
+            return request.make_json_response({'success': False, 'error': 'Invalid JSON'}, status=400)
+
+        event_type = body.get('event')
+        event_data = body.get('data', {})
+
+        if not event_type:
+            return request.make_json_response({'success': False, 'error': 'Missing event type'}, status=400)
+
+        _logger.info('AMI Event [%s] received via HTTP | UniqueID: %s',
+                     event_type, event_data.get('Uniqueid', ''))
+
+        try:
+            self._dispatch_ami_event(event_type, event_data)
+            return request.make_json_response({'success': True})
+        except Exception as e:
+            _logger.error('AMI Event [%s] error: %s', event_type, str(e), exc_info=True)
+            return request.make_json_response({'success': False, 'error': str(e)}, status=500)
+
     @http.route('/asterisk/ami_event', type='jsonrpc', auth='none', csrf=False)
     def ami_event(self, **kwargs):
         """
-        Webhook nhận event từ Asterisk AMI
-        Cần cấu hình Asterisk gửi event tới endpoint này
+        JSON-RPC endpoint nhận event từ Asterisk AMI (legacy).
         """
-        _logger.info('AMI Event received: %s', kwargs)
-        
+        _logger.info('AMI Event received: %s', kwargs.get('event', ''))
         event_type = kwargs.get('event')
-        
         try:
-            if event_type == 'Newchannel':
-                # Cuộc gọi mới được khởi tạo - xử lý cuộc gọi đi từ IP phone
-                self._handle_newchannel_event(kwargs)
-                
-            elif event_type == 'Dial':
-                # Xử lý khi IP phone quay số
-                self._handle_dial_event(kwargs)
-                
-            elif event_type == 'Ringing':
-                # Đang đổ chuông
-                self._handle_ringing_event(kwargs)
-                
-            elif event_type == 'Answer':
-                # Cuộc gọi được trả lời
-                self._handle_answer_event(kwargs)
-                
-            elif event_type == 'Hangup':
-                # Cuộc gọi kết thúc
-                self._handle_hangup_event(kwargs)
-                
-            elif event_type == 'Transfer':
-                # Cuộc gọi được chuyển
-                self._handle_transfer_event(kwargs)
-                
+            self._dispatch_ami_event(event_type, kwargs)
             return {'success': True}
-            
         except Exception as e:
             _logger.error('AMI Event error: %s', str(e))
             return {'success': False, 'error': str(e)}
+
+    def _dispatch_ami_event(self, event_type, data):
+        """Dispatch AMI event to appropriate handler"""
+        if event_type == 'Newchannel':
+            self._handle_newchannel_event(data)
+        elif event_type == 'Dial':
+            self._handle_dial_event(data)
+        elif event_type == 'Ringing':
+            self._handle_ringing_event(data)
+        elif event_type == 'Answer':
+            self._handle_answer_event(data)
+        elif event_type == 'Hangup':
+            self._handle_hangup_event(data)
+        elif event_type == 'Transfer':
+            self._handle_transfer_event(data)
+        elif event_type == 'Cdr':
+            self._handle_cdr_event(data)
+        elif event_type == 'Newexten':
+            self._handle_newexten_event(data)
 
     def _handle_ringing_event(self, data):
         """Xử lý event đổ chuông - cuộc gọi đến"""
@@ -186,11 +205,15 @@ class AsteriskController(http.Controller):
             state = 'failed'
         
         with request.env.cr.savepoint():
-            request.env['asterisk.call.log'].sudo().update_call_state(
+            call_log = request.env['asterisk.call.log'].sudo().update_call_state(
                 data.get('Uniqueid'),
                 state,
                 billsec=data.get('BillableSeconds', 0)
             )
+            
+            # Tự động tạo crm.lead.care.history cho cuộc gọi đã kết nối
+            if call_log and call_log.answer_time:
+                self._auto_create_care_history(call_log)
 
     def _handle_transfer_event(self, data):
         """Xử lý event chuyển cuộc gọi"""
@@ -272,6 +295,177 @@ class AsteriskController(http.Controller):
                 call_log.write({
                     'state': 'ringing',
                 })
+
+    def _handle_newexten_event(self, data):
+        """Xử lý event Newexten - lấy recording URL từ MixMonitor"""
+        if data.get('Application') != 'MixMonitor':
+            return
+
+        unique_id = data.get('Uniqueid', '')
+        linked_id = data.get('Linkedid', '')
+        app_data = data.get('AppData', '')
+
+        # AppData format: /path/to/recording.wav,options
+        recording_file = app_data.split(',')[0] if app_data else ''
+        if not recording_file:
+            return
+
+        # Tìm call log theo unique_id hoặc linked_id
+        lookup_id = linked_id or unique_id
+        if not lookup_id:
+            return
+
+        with request.env.cr.savepoint():
+            call_log = request.env['asterisk.call.log'].sudo().search([
+                '|',
+                ('unique_id', '=', lookup_id),
+                ('linked_id', '=', lookup_id),
+            ], limit=1)
+
+            if call_log:
+                # Xây dựng URL ghi âm
+                recording_url = self._build_recording_url(recording_file)
+                call_log.write({'recording_url': recording_url})
+                _logger.info('Recording URL saved for call %s: %s', lookup_id, recording_url)
+
+    def _handle_cdr_event(self, data):
+        """Xử lý event CDR - cập nhật thông tin cuộc gọi cuối cùng"""
+        unique_id = data.get('Uniqueid', '')
+        linked_id = data.get('Linkedid', '')
+        if not unique_id:
+            return
+
+        # Skip noise: Local channel, voicebot, etc.
+        channel = data.get('Channel', '')
+        if channel.startswith('Local/') and data.get('Disposition') == 'NO ANSWER':
+            return
+
+        lookup_id = linked_id if linked_id and unique_id == linked_id else unique_id
+
+        with request.env.cr.savepoint():
+            call_log = request.env['asterisk.call.log'].sudo().search([
+                '|',
+                ('unique_id', '=', lookup_id),
+                ('linked_id', '=', lookup_id),
+            ], limit=1, order='id desc')
+
+            if not call_log:
+                return
+
+            vals = {}
+            # Cập nhật billsec
+            billsec = data.get('BillableSeconds') or data.get('Billsec')
+            if billsec:
+                vals['billsec'] = int(billsec)
+
+            # Cập nhật duration
+            duration = data.get('Duration')
+            if duration:
+                vals['duration'] = int(duration)
+
+            # Cập nhật thời gian
+            if data.get('StartTime'):
+                try:
+                    vals['start_time'] = fields.Datetime.to_datetime(data['StartTime'])
+                except Exception:
+                    pass
+            if data.get('EndTime'):
+                try:
+                    vals['end_time'] = fields.Datetime.to_datetime(data['EndTime'])
+                except Exception:
+                    vals['end_time'] = fields.Datetime.now()
+            if data.get('AnswerTime') and not call_log.answer_time:
+                try:
+                    vals['answer_time'] = fields.Datetime.to_datetime(data['AnswerTime'])
+                except Exception:
+                    pass
+
+            # Recording từ CDR nếu chưa có
+            if not call_log.recording_url:
+                rec_file = data.get('RecordingFile', '')
+                if rec_file:
+                    vals['recording_url'] = self._build_recording_url(rec_file)
+
+            # Cập nhật state từ Disposition
+            disposition = data.get('Disposition', '')
+            if disposition == 'ANSWERED' and call_log.state not in ('hangup',):
+                if not call_log.answer_time:
+                    vals['state'] = 'answered'
+            elif disposition == 'NO ANSWER':
+                vals['state'] = 'no_answer'
+            elif disposition == 'BUSY':
+                vals['state'] = 'busy'
+            elif disposition == 'FAILED':
+                vals['state'] = 'failed'
+
+            if vals:
+                call_log.write(vals)
+                _logger.info('CDR updated call log %s: %s', call_log.id, list(vals.keys()))
+
+    def _build_recording_url(self, recording_path):
+        """Xây dựng URL đầy đủ cho file ghi âm"""
+        if not recording_path:
+            return ''
+
+        # Nếu đã là URL đầy đủ
+        if recording_path.startswith(('http://', 'https://')):
+            return recording_path
+
+        # Lấy recording base URL từ server config
+        server = request.env['asterisk.server'].sudo().search([
+            ('active', '=', True),
+        ], limit=1)
+
+        base_url = ''
+        if server and server.recording_base_url:
+            base_url = server.recording_base_url.rstrip('/')
+
+        # Lấy tên file từ đường dẫn đầy đủ
+        filename = recording_path.split('/')[-1] if '/' in recording_path else recording_path
+
+        if base_url:
+            return f"{base_url}/{filename}"
+        return recording_path
+
+    def _auto_create_care_history(self, call_log):
+        """Tự động tạo crm.lead.care.history khi cuộc gọi kết thúc (đã kết nối)"""
+        try:
+            # Kiểm tra model tồn tại (telesale_crm có thể chưa cài)
+            if 'crm.lead.care.history' not in request.env:
+                return
+
+            CareHistory = request.env['crm.lead.care.history'].sudo()
+
+            # Kiểm tra đã tạo care history cho call_log này chưa
+            existing = CareHistory.search([('call_log_id', '=', call_log.id)], limit=1)
+            if existing:
+                return
+
+            call_type = 'out' if call_log.direction == 'outgoing' else 'in'
+
+            vals = {
+                'call_log_id': call_log.id,
+                'call_type': call_type,
+                'user_id': call_log.user_id.id if call_log.user_id else False,
+                'record_url': call_log.recording_url or '',
+                'note': '',
+            }
+
+            # Tự động liên kết với lead nếu có partner
+            if call_log.partner_id and 'crm.lead' in request.env:
+                lead = request.env['crm.lead'].sudo().search([
+                    ('partner_id', '=', call_log.partner_id.id),
+                    ('active', '=', True),
+                ], limit=1, order='create_date desc')
+                if lead:
+                    vals['lead_id'] = lead.id
+
+            CareHistory.create(vals)
+            _logger.info('Auto-created care history for call_log %s (direction=%s, phone=%s)',
+                         call_log.id, call_log.direction, call_log.phone_number)
+        except Exception as e:
+            _logger.error('Error auto-creating care history for call_log %s: %s',
+                          call_log.id, str(e))
 
     def _notify_outgoing_call(self, call_log):
         """Gửi notification tới user về cuộc gọi đi (từ IP phone)"""
@@ -659,6 +853,49 @@ class AsteriskController(http.Controller):
             
         except Exception as e:
             _logger.error('Error updating status: %s', str(e))
+            return {'success': False, 'error': str(e)}
+
+    @http.route('/asterisk/get_crm_tags', type='jsonrpc', auth='user')
+    def get_crm_tags(self, **kwargs):
+        """Lấy danh sách CRM tags để chọn khi lưu ghi chú cuộc gọi"""
+        try:
+            tags = request.env['crm.tag'].search([])
+            data = [{'id': t.id, 'name': t.name} for t in tags]
+            return {'success': True, 'data': data}
+        except Exception as e:
+            _logger.error('Error getting CRM tags: %s', str(e))
+            return {'success': False, 'error': str(e), 'data': []}
+
+    @http.route('/asterisk/save_care_note', type='jsonrpc', auth='user')
+    def save_care_note(self, call_log_id=None, note=None, tag_id=None, call_type=None, **kwargs):
+        """Lưu ghi chú cuộc gọi vào crm.lead.care.history"""
+        try:
+            vals = {
+                'note': note or '',
+                'user_id': request.env.uid,
+                'call_type': 'out' if call_type == 'outgoing' else 'in',
+            }
+
+            if tag_id:
+                vals['tag_ids'] = [(4, int(tag_id))]
+
+            if call_log_id:
+                call_log = request.env['asterisk.call.log'].sudo().browse(int(call_log_id))
+                if call_log.exists():
+                    vals['call_log_id'] = call_log.id
+                    # Tự động liên kết với lead nếu có partner và partner có lead
+                    if call_log.partner_id:
+                        lead = request.env['crm.lead'].search([
+                            ('partner_id', '=', call_log.partner_id.id),
+                            ('active', '=', True),
+                        ], limit=1, order='create_date desc')
+                        if lead:
+                            vals['lead_id'] = lead.id
+
+            care_history = request.env['crm.lead.care.history'].sudo().create(vals)
+            return {'success': True, 'id': care_history.id}
+        except Exception as e:
+            _logger.error('Error saving care note: %s', str(e))
             return {'success': False, 'error': str(e)}
 
     @http.route('/asterisk/get_agent_status', type='jsonrpc', auth='user')

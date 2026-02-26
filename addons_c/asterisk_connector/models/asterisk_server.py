@@ -29,6 +29,9 @@ class AsteriskServer(models.Model):
                              help='Port WebSocket của Asterisk (thường là 8089 cho wss hoặc 8088 cho ws)')
     ws_path = fields.Char(string='WebSocket Path', default='/ws',
                           help='Đường dẫn WebSocket, ví dụ: /ws')
+    recording_base_url = fields.Char(
+        string='Recording Base URL',
+        help='Base URL để truy cập file ghi âm, ví dụ: https://domain.com/recordings')
     active = fields.Boolean(string='Active', default=True)
     state = fields.Selection([
         ('disconnected', 'Chưa kết nối'),

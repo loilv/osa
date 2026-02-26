@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="crm_oppo_list_view" model="ir.ui.view">
+        <field name="name">crm_oppo_list_view</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <list string="crm_oppo_list_view" create="false" delete="false">
+                <header>
+                    <button name="get_lead" type="object" string="Lấy thêm cơ hội" display="always"/>
+                    <button name="assign_agent" type="object" string="Chia cơ hội"/>
+                </header>
+                <field name="phone" widget="asterisk_phone"/>
+                <field name="campaign_id" optional="show"/>
+                <field name="stage_id" optional="show"/>
+                <field name="tag_ids" optional="show"/>
+                <field name="partner_id" optional="show"/>
+                <field name="user_id" optional="show"/>
+                <field name="last_call_time" optional="show"/>
+                <field name="call_back_time" optional="show"/>
+                <field name="date_insurance" optional="show"/>
+                <field name="record_url" optional="show"/>
+                <field name="lost_reason_id" optional="show"/>
+                <button name="assign_tag" icon="fa-tags" type="object" string="Gán nhãn" class="oe_highlight"/>
+                <button name="make_order" icon="fa-reorder" type="object" string="Cấp đơn" class="oe_highlight"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="crm_oppo_view_form" model="ir.ui.view">
+        <field name="name">crm_oppo_view_form</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <form string="crm_oppo_form" create="false" delete="false">
+                <header>
+                    <button name="action_set_won_rainbowman" string="Won"
+                            type="object" class="oe_highlight" data-hotkey="w" title="Mark as won"
+                            invisible="won_status == 'won' or type == 'lead' or not active"/>
+                    <button name="action_chat_zalo" icon="fa-comments" string="Chat Zalo"
+                            type="object" class="oe_highlight" data-hotkey="w"/>
+                    <button name="action_set_won_rainbowman" string="Loại bỏ"
+                            type="object" class="btn btn-danger" data-hotkey="w" title="Mark as won"
+                            invisible="won_status == 'won' or type == 'lead' or not active"/>
+                    <button name="action_set_won_rainbowman" string="Cấp đơn"
+                            type="object" class="btn btn-success" data-hotkey="w" title="Mark as won"
+                            invisible="won_status == 'won' or type == 'lead' or not active"/>
+                    <button name="action_set_won_rainbowman" string="Tư Vấn"
+                            type="object" class="oe_highlight" data-hotkey="w" title="Mark as won"
+                            invisible="won_status == 'won' or type == 'lead' or not active"/>
+                    <button name="action_set_won_rainbowman" string="Hẹn gọi lại"
+                            type="object" class="btn btn-warning" icon="fa-calendar-plus-o" data-hotkey="w"
+                            title="Mark as won"
+                            invisible="won_status == 'won' or type == 'lead' or not active"/>
+                    <field name="stage_id" widget="rotting_statusbar_duration"
+                           options="{'clickable': '1', 'fold_field': 'fold'}"
+                           domain="['|', ('team_ids', 'in', team_id), ('team_ids', '=', False)]"
+                           invisible="type == 'lead'" readonly="won_status == 'lost' or not active"/>
+                </header>
+                <sheet>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h1 class="flex-grow-1">
+                            <field class="text-break" options="{'line_breaks': False}" widget="text" name="name"
+                                   placeholder="Cơ hội"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Thông tin cơ hội">
+                            <field name="stage_id"/>
+                            <field name="tag_ids" widget="many2many_tags"/>
+                            <field name="user_id"/>
+                            <field name="call_back_time"/>
+                            <field name="lost_reason_id"/>
+                        </group>
+
+                        <group string="Thông tin định danh khách hàng">
+                            <field name="partner_id"/>
+                            <field name="phone" widget="asterisk_phone"/>
+                            <field name="email_from"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="note" string="Mô tả"/>
+                    </group>
+
+                    <notebook>
+                        <page string="Lịch sử chăm sóc">
+                            <field name="care_history_ids" readonly="1">
+                                <list>
+                                    <field name="call_type"/>
+                                    <field name="tag_ids" widget="many2many_tags"/>
+                                    <field name="note"/>
+                                    <field name="user_id"/>
+                                    <field name="record_url"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Thông tin đăng kiểm">
+                            <group col="2">
+                                <group>
+                                    <field name="vehicle_type"/>
+                                    <field name="brand"/>
+                                    <field name="model"/>
+                                    <field name="chassis_number"/>
+                                    <field name="engine_number"/>
+                                    <field name="seat_capacity"/>
+                                    <field name="business_transport"/>
+                                    <field name="color"/>
+                                    <field name="fuel_type"/>
+                                    <field name="inspection_expiry_date"/>
+                                    <field name="cylinder_capacity"/>
+                                    <field name="container_size"/>
+                                    <field name="axle_length"/>
+                                    <field name="engine_power_rpm"/>
+                                </group>
+
+                                <group>
+                                    <field name="license_plate"/>
+                                    <field name="owner_name"/>
+                                    <field name="managing_unit"/>
+                                    <field name="registration_address"/>
+                                    <field name="manufacture_year"/>
+                                    <field name="manufacture_country"/>
+                                    <field name="designed_payload"/>
+                                    <field name="allowed_people"/>
+                                    <field name="total_weight_design"/>
+                                    <field name="towing_weight"/>
+                                    <field name="inspection_certificate_no"/>
+                                    <field name="inspection_serial"/>
+                                    <field name="inspection_issue_date"/>
+                                    <field name="inspection_expiry_date"/>
+                                    <field name="modified_status"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Thông tin đăng ký">
+                            <group col="2">
+                                <group>
+                                    <field name="vehicle_category"/>
+                                    <field name="brand"/>
+                                    <field name="model"/>
+                                    <field name="seat_capacity"/>
+                                    <field name="manufacture_year"/>
+                                    <field name="chassis_number"/>
+                                    <field name="engine_number"/>
+                                    <field name="color"/>
+                                    <field name="payload_weight"/>
+                                    <field name="first_registration_date"/>
+                                    <field name="last_registration_date"/>
+                                </group>
+                                <group>
+                                    <field name="license_plate"/>
+                                    <field name="plate_type"/>
+                                    <field name="usage_purpose"/>
+                                    <field name="estimated_value"/>
+                                    <field name="inspection_issue_date"/>
+                                    <field name="inspection_expiry_date"/>
+                                    <field name="insurance_expiry_date"/>
+                                    <separator string="Thông tin chủ xe"/>
+                                    <field name="owner_name"/>
+                                    <field name="registration_address"/>
+                                </group>
+
+                            </group>
+                        </page>
+                        <page string="Lịch sử đơn hàng"></page>
+                        <page string="Lịch sử Agent phụ trách"></page>
+                    </notebook>
+                </sheet>
+                <!-- Chatter -->
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+</odoo>

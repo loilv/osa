@@ -43,7 +43,9 @@ Tính năng:
             'asterisk_connector/static/src/js/phone_service.js',
             'asterisk_connector/static/src/js/phone_widget.js',
             'asterisk_connector/static/src/js/systray_phone.js',
+            'asterisk_connector/static/src/js/asterisk_phone_field.js',
             'asterisk_connector/static/src/xml/phone_templates.xml',
+            'asterisk_connector/static/src/xml/asterisk_phone_field.xml',
         ],
     },
     'external_dependencies': {

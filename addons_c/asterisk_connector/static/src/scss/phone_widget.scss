@@ -1,5 +1,25 @@
 /* Asterisk Phone Widget Styles */
 
+
+.o_notebook .o_list_table th span {
+    white-space: normal !important;
+    text-align: center !important;
+}
+
+.o_notebook .o_list_table {
+    table-layout: auto;
+}
+
+.o_notebook .o_list_table th[style*="%"]:not(.o_list_controller):not(.o_handle_cell):not(.o_list_button) {
+    width: 125px !important;
+    max-width: none !important;
+}
+
+.o_notebook .o_list_table th div {
+    width: fit-content !important;
+}
+
+
 /* Systray Phone Icon */
 .o_asterisk_systray {
     .systray_phone_wrapper {
@@ -1077,6 +1097,49 @@
     50% {
         opacity: 0.6;
     }
+}
+
+/* Asterisk Phone Field Widget (list/form inline) */
+.o_asterisk_phone_field {
+    gap: 8px;
+
+    .o_asterisk_phone_number {
+        font-size: 14px;
+        color: #212529;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+    }
+
+    .o_asterisk_call_btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        color: #22863a;
+        cursor: pointer;
+        padding: 0;
+        flex-shrink: 0;
+        transition: background 0.18s, color 0.18s, transform 0.15s;
+
+        svg {
+            display: block;
+        }
+
+        &:hover {
+            background: rgba(40, 167, 69, 0.12);
+            color: #1a6e2e;
+            transform: scale(1.12);
+        }
+
+        &:active {
+            transform: scale(0.95);
+        }
+    }
+
 }
 
 /* Responsive */

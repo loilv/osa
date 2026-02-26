@@ -7,7 +7,7 @@ export class LivechatSessionList extends Component {
     static props = {
         sessions: { type: Array },
         loading: { type: Boolean },
-        currentSessionId: { type: Number, optional: true },
+        currentSessionId: { type: [Number, Boolean, { value: undefined }], optional: true },
         onSessionClick: { type: Function },
         onSearchInput: { type: Function },
         onNewChat: { type: Function },

@@ -62,19 +62,35 @@ class LivechatSidebarController(http.Controller):
     # Session management
     # ------------------------------------------------------------------
     @http.route('/livechat_sidebar/create_session', type='json', auth='user')
-    def create_session(self, phone=None):
-        """Create a new livechat session for the given phone number."""
+    def create_session(self, phone=None, name=None):
+        """Create a new livechat session for the given phone number.
+
+        If an open (non-closed) session already exists for this partner/phone,
+        return that session instead of creating a new one.
+        """
         if not phone or not phone.strip():
             return {'error': 'Phone number is required.'}
         phone = phone.strip()
         # Find or create partner by phone
         partner = request.env['res.partner'].sudo().search([('phone', '=', phone)], limit=1)
+        partner_name = (name or '').strip() or phone
         if not partner:
             partner = request.env['res.partner'].sudo().create({
-                'name': phone,
+                'name': partner_name,
                 'phone': phone,
             })
+        else:
+            if name and name.strip() and partner.name != name.strip():
+                partner.sudo().write({'name': name.strip()})
         operator = request.env.user.partner_id
+        # Check for an existing open session for this partner
+        existing_channel = request.env['discuss.channel'].sudo().search([
+            ('channel_type', '=', 'livechat'),
+            ('channel_member_ids.partner_id', '=', partner.id),
+            ('livechat_end_dt', '=', False),
+        ], order='create_date desc', limit=1)
+        if existing_channel:
+            return {'channel_id': existing_channel.id, 'existing': True}
         # Find a livechat channel where the current user is an operator
         livechat_channel = request.env['im_livechat.channel'].sudo().search([
             ('user_ids', 'in', [request.env.user.id]),
@@ -122,7 +138,7 @@ class LivechatSidebarController(http.Controller):
                         })
             except Exception as e:
                 _logger.warning('Could not link Zalo for %s: %s', phone, e)
-        return {'channel_id': channel.id}
+        return {'channel_id': channel.id, 'existing': False}
 
     @http.route('/livechat_sidebar/get_sessions', type='json', auth='user')
     def get_sessions(self, current_channel_id=None, search_query=None):
@@ -227,6 +243,31 @@ class LivechatSidebarController(http.Controller):
                     for f in (friends_result.get('data') or [])
                 }
                 is_friend = str(uid) in friend_ids
+            friend_request_sent = False
+            if not is_friend and uid:
+                try:
+                    fr_result = account._call_bridge(
+                        'send-friend-request',
+                        method='POST',
+                        data={
+                            'userId': uid,
+                            'msg': 'Xin chào! Tôi muốn kết bạn với bạn.',
+                        },
+                    )
+                    if fr_result.get('success'):
+                        friend_request_sent = True
+                        _logger.info(
+                            'Auto friend request sent to %s (uid: %s)', phone, uid,
+                        )
+                    else:
+                        _logger.warning(
+                            'Auto friend request failed for %s: %s',
+                            phone, fr_result.get('error', ''),
+                        )
+                except Exception as fe:
+                    _logger.warning(
+                        'Exception sending auto friend request for %s: %s', phone, fe,
+                    )
             return {
                 'success': True,
                 'data': {
@@ -238,6 +279,7 @@ class LivechatSidebarController(http.Controller):
                     'avatar': user_data.get('avatar', ''),
                     'phone': phone,
                     'is_friend': is_friend,
+                    'friend_request_sent': friend_request_sent,
                 },
             }
         except Exception as e:
@@ -427,6 +469,7 @@ class LivechatSidebarController(http.Controller):
         zalo_type = data.get('type', 'user')  # "user" or "group"
         if is_self or not thread_id:
             return
+        _logger.info('[Zalo Webhook] data', data)
         _logger.info('[Zalo Webhook] type=%s threadId=%s', zalo_type, thread_id)
         # Find account
         account = self._get_zalo_account_for_webhook(account_id_str)
@@ -443,45 +486,65 @@ class LivechatSidebarController(http.Controller):
         partner = request.env['res.partner'].sudo().search([
             ('zalo_uid', '=', sender_zalo_uid),
         ], limit=1)
+        # Fetch user info from bridge (needed for new partner; also used to fill missing fields)
+        zalo_name = 'Zalo %s' % sender_zalo_uid
+        zalo_avatar_b64 = False
+        zalo_phone = ''
+        try:
+            info_resp = account._call_bridge(
+                'get-user-info', method='POST',
+                data={'userId': sender_zalo_uid},
+            )
+            profiles = (info_resp.get('data') or {}).get('changed_profiles') or {}
+            # Profile key is "uid_0" format
+            profile = profiles.get('%s_0' % sender_zalo_uid) or {}
+            if not profile:
+                # Try without suffix
+                profile = next(iter(profiles.values()), {})
+            fetched_name = profile.get('displayName') or profile.get('zaloName') or ''
+            if fetched_name:
+                zalo_name = fetched_name
+            avatar_url = profile.get('avatar') or ''
+            if avatar_url:
+                dl = self._download_zalo_file(avatar_url)
+                if dl:
+                    zalo_avatar_b64 = base64.b64encode(dl[0]).decode('ascii')
+            # Phone only for user threads (not groups)
+            if zalo_type != 'group':
+                zalo_phone = (
+                    profile.get('phoneNumber')
+                    or profile.get('phone')
+                    or profile.get('msisdn')
+                    or ''
+                )
+            _logger.info(
+                '[Zalo Webhook] Fetched user info for %s: name=%s avatar=%s phone=%s',
+                sender_zalo_uid, zalo_name, bool(zalo_avatar_b64), bool(zalo_phone),
+            )
+        except Exception as e:
+            _logger.warning(
+                '[Zalo Webhook] Failed to fetch user info for %s: %s',
+                sender_zalo_uid, e,
+            )
         if not partner:
-            # Fetch user info from Zalo via bridge
-            zalo_name = 'Zalo %s' % sender_zalo_uid
-            zalo_avatar_b64 = False
-            try:
-                info_resp = account._call_bridge(
-                    'get-user-info', method='POST',
-                    data={'userId': sender_zalo_uid},
-                )
-                profiles = (info_resp.get('data') or {}).get('changed_profiles') or {}
-                # Profile key is "uid_0" format
-                profile = profiles.get('%s_0' % sender_zalo_uid) or {}
-                if not profile:
-                    # Try without suffix
-                    profile = next(iter(profiles.values()), {})
-                fetched_name = profile.get('displayName') or profile.get('zaloName') or ''
-                if fetched_name:
-                    zalo_name = fetched_name
-                avatar_url = profile.get('avatar') or ''
-                if avatar_url:
-                    dl = self._download_zalo_file(avatar_url)
-                    if dl:
-                        zalo_avatar_b64 = base64.b64encode(dl[0]).decode('ascii')
-                _logger.info(
-                    '[Zalo Webhook] Fetched user info for %s: name=%s avatar=%s',
-                    sender_zalo_uid, zalo_name, bool(zalo_avatar_b64),
-                )
-            except Exception as e:
-                _logger.warning(
-                    '[Zalo Webhook] Failed to fetch user info for %s: %s',
-                    sender_zalo_uid, e,
-                )
             partner_vals = {
                 'name': zalo_name,
                 'zalo_uid': sender_zalo_uid,
             }
             if zalo_avatar_b64:
                 partner_vals['image_1920'] = zalo_avatar_b64
+            if zalo_phone:
+                partner_vals['phone'] = zalo_phone
             partner = request.env['res.partner'].sudo().create(partner_vals)
+        else:
+            # Update missing fields on existing partner
+            update_vals = {}
+            if zalo_avatar_b64 and not partner.image_1920:
+                update_vals['image_1920'] = zalo_avatar_b64
+            if zalo_phone and not partner.phone:
+                update_vals['phone'] = zalo_phone
+            if update_vals:
+                partner.sudo().write(update_vals)
         # Find existing channel (by thread_id = group ID or user ID)
         channel = request.env['discuss.channel'].sudo().search([
             ('channel_type', '=', 'livechat'),
@@ -504,12 +567,7 @@ class LivechatSidebarController(http.Controller):
             if not livechat_channel:
                 _logger.error('[Zalo Webhook] No livechat channel configured')
                 return
-            operator_name = (
-                first_user.livechat_username
-                or first_user.name
-                or 'Nhân viên'
-            ) if first_user else 'Nhân viên'
-            channel_name = '%s %s' % (partner.name, operator_name)
+            channel_name = partner.name
             if zalo_type == 'group':
                 channel_name = 'Zalo Group %s' % thread_id
             channel = request.env['discuss.channel'].sudo().create({
