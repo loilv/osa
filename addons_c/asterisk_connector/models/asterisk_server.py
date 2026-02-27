@@ -2,8 +2,8 @@
 
 import logging
 from asterisk.ami import AMIClient, SimpleAction
-from odoo import models, fields, api, _
-from odoo.exceptions import UserError, ValidationError
+from odoo import models, fields, _
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 

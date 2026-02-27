@@ -1,55 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-
-    <!-- Navbar: Back to home grid button -->
-    <t t-name="telesale_menu.NavbarBreadcrumb">
-        <t t-if="!state.isEnabled"/>
-        <div t-elif="hasCurrentApp" class="o_telesale_back_wrap">
-            <button class="o_telesale_back_btn" t-on-click="onHomeClick"
-                    title="Quay lại trang chủ">
-                <i class="fa fa-th"/>
-            </button>
-        </div>
-    </t>
-
-    <!-- Main Grid Home Menu -->
-    <t t-name="telesale_menu.TelesaleMenu">
-        <t t-if="!state.isEnabled"/>
-        <div t-else="" t-attf-class="o_grid_home_menu #{state.isVisible ? 'o_grid_visible' : 'o_grid_hidden'}">
-            <div class="o_grid_home_content">
-                <!-- Search Bar -->
-                <div class="o_grid_search_wrap">
-                    <div class="o_grid_search_bar">
-                        <i class="fa fa-search o_grid_search_icon"/>
-                        <input type="text"
-                               class="o_grid_search_input"
-                               placeholder="Tìm kiếm"
-                               t-on-input="onSearchInput"
-                               t-att-value="state.searchQuery"/>
-                    </div>
-                </div>
-
-                <!-- App Grid -->
-                <div class="o_grid_apps">
-                    <t t-foreach="filteredApps" t-as="app" t-key="app.id">
-                        <div class="o_grid_app_item"
-                             t-on-click="(ev) => this.onAppClick(app, ev)">
-                            <div class="o_grid_app_icon" t-att-data-app="getAppDataAttr(app)">
-                                <t t-if="getAppIcon(app)">
-                                    <img t-att-src="getAppIcon(app)" t-att-alt="app.name"/>
-                                </t>
-                                <t t-else="">
-                                    <i t-att-class="getAppIconClass(app)"/>
-                                </t>
-                            </div>
-                            <span class="o_grid_app_name" t-out="app.name"/>
-                        </div>
-                    </t>
-                </div>
-            </div>
-        </div>
-    </t>
-
     <!-- Systray: DateTime -->
     <t t-name="telesale_menu.SystrayDateTime">
         <div class="o_systray_datetime d-flex align-items-center px-2">

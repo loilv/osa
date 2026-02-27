@@ -160,7 +160,10 @@ export class SystrayPhone extends Component {
                 this.phoneService.updateUserStatus(newStatus);
                 // Dispatch event to reset active time in telesale_menu
                 window.dispatchEvent(new CustomEvent("telesale_status_changed", {
-                    detail: {status: newStatus},
+                    detail: {
+                        status: newStatus,
+                        status_change_time: result.status_change_time,
+                    },
                 }));
                 this.notification.add(`Trạng thái đã đổi thành: ${this.getStatusLabel(newStatus)}`, {
                     type: 'success',

@@ -243,6 +243,7 @@ class AsteriskUser(models.Model):
             'old_status': old_status,
             'new_status': new_status,
             'duration': duration,
+            'status_change_time': self.status_change_time.isoformat() if self.status_change_time else None,
         }
         if ami_error:
             result['ami_warning'] = ami_error

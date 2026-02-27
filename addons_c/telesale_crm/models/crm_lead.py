@@ -106,9 +106,6 @@ class CrmLead(models.Model):
     def assign_agent(self):
         pass
 
-    def make_history(self):
-        pass
-
     def action_chat_zalo(self):
         action = self.env["ir.actions.act_window"]._for_xml_id("livechat_sidebar.livechat_sidebar_chat_action")
         livechat_channel_ids = self.env['im_livechat.channel.member.history'].search([

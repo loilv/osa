@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="asterisk_connector.CareNoteDialog" owl="1">
+        <div class="care_note_overlay">
+            <div class="care_note_dialog">
+                <!-- Header -->
+                <div class="care_note_header">
+                    <i class="fa fa-clipboard me-2"/>
+                    <span>Thông tin chăm sóc</span>
+                </div>
+
+                <!-- Call Info -->
+                <div class="care_note_call_info">
+                    <div class="care_note_direction">
+                        <i t-att-class="props.endedCall.direction === 'incoming' ? 'fa fa-arrow-down text-primary' : 'fa fa-arrow-up text-success'"/>
+                        <span t-esc="directionLabel"/>
+                    </div>
+                    <div class="care_note_caller" t-esc="callerDisplay"/>
+                    <div class="care_note_phone" t-if="props.endedCall.partner" t-esc="props.endedCall.phoneNumber"/>
+                </div>
+
+                <!-- Tags -->
+                <div class="care_note_section" t-if="tags.length > 0">
+                    <label class="care_note_label">Tags</label>
+                    <div class="care_note_tags">
+                        <t t-foreach="tags" t-as="tag" t-key="tag.id">
+                            <button class="care_note_tag"
+                                    t-att-class="{ selected: isTagSelected(tag.id) }"
+                                    t-on-click="() => this.toggleTag(tag.id)">
+                                <i t-att-class="isTagSelected(tag.id) ? 'fa fa-check-square-o' : 'fa fa-square-o'"/>
+                                <span t-esc="tag.name"/>
+                            </button>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- Note -->
+                <div class="care_note_section">
+                    <label class="care_note_label">Ghi chú</label>
+                    <textarea class="care_note_textarea"
+                              rows="3"
+                              placeholder="Nhập ghi chú cuộc gọi..."
+                              t-on-input="onNoteInput"
+                              t-att-value="state.note"/>
+                </div>
+
+                <!-- Actions -->
+                <div class="care_note_actions">
+                    <button class="care_note_btn skip" t-on-click="onSkip">
+                        Bỏ qua
+                    </button>
+                    <button class="care_note_btn save" t-on-click="onSave" t-att-disabled="state.isSaving">
+                        <i t-att-class="state.isSaving ? 'fa fa-spinner fa-spin' : 'fa fa-save'"/>
+                        <span t-if="!state.isSaving">Lưu</span>
+                        <span t-else="">Đang lưu...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

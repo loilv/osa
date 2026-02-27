@@ -2,6 +2,7 @@
 
 import json
 import logging
+from datetime import timedelta
 from odoo import http, fields
 from odoo.http import request
 
@@ -108,7 +109,7 @@ class AsteriskController(http.Controller):
                      config.get('ws_enabled'), bool(config.get('sip_password')), config.get('ws_url'))
         return {'success': True, 'data': config}
 
-    @http.route('/asterisk/events', type='http', auth='none', csrf=False, methods=['POST'])
+    @http.route('/asterisk/events', type='http', auth='public', csrf=False, methods=['POST'])
     def ami_events_http(self, **kwargs):
         """
         HTTP endpoint nhận event từ AMI Listener service.
@@ -125,8 +126,8 @@ class AsteriskController(http.Controller):
         if not event_type:
             return request.make_json_response({'success': False, 'error': 'Missing event type'}, status=400)
 
-        _logger.info('AMI Event [%s] received via HTTP | UniqueID: %s',
-                     event_type, event_data.get('Uniqueid', ''))
+        _logger.info('AMI Event [%s] received via HTTP | UniqueID: %s | Channel: %s',
+                     event_type, event_data.get('Uniqueid', ''), event_data.get('Channel', ''))
 
         try:
             self._dispatch_ami_event(event_type, event_data)
@@ -189,7 +190,9 @@ class AsteriskController(http.Controller):
         with request.env.cr.savepoint():
             request.env['asterisk.call.log'].sudo().update_call_state(
                 data.get('Uniqueid'),
-                'answered'
+                'answered',
+                channel=data.get('Channel'),
+                linked_id=data.get('Linkedid'),
             )
 
     def _handle_hangup_event(self, data):
@@ -208,7 +211,9 @@ class AsteriskController(http.Controller):
             call_log = request.env['asterisk.call.log'].sudo().update_call_state(
                 data.get('Uniqueid'),
                 state,
-                billsec=data.get('BillableSeconds', 0)
+                billsec=data.get('BillableSeconds', 0),
+                channel=data.get('Channel'),
+                linked_id=data.get('Linkedid'),
             )
             
             # Tự động tạo crm.lead.care.history cho cuộc gọi đã kết nối
@@ -217,10 +222,14 @@ class AsteriskController(http.Controller):
 
     def _handle_transfer_event(self, data):
         """Xử lý event chuyển cuộc gọi"""
+        unique_id = data.get('Uniqueid', '')
+        linked_id = data.get('Linkedid', '')
+        
         with request.env.cr.savepoint():
-            call_log = request.env['asterisk.call.log'].sudo().search([
-                ('unique_id', '=', data.get('Uniqueid'))
-            ], limit=1)
+            CallLog = request.env['asterisk.call.log'].sudo()
+            call_log = CallLog.search([('unique_id', '=', unique_id)], limit=1)
+            if not call_log and linked_id:
+                call_log = CallLog.search([('linked_id', '=', linked_id)], limit=1)
             
             if call_log:
                 call_log.write({
@@ -229,19 +238,21 @@ class AsteriskController(http.Controller):
                 })
 
     def _handle_newchannel_event(self, data):
-        """Xử lý event khi có channel mới - đặc biệt cho cuộc gọi đi từ IP phone"""
+        """Xử lý event khi có channel mới - cho cuộc gọi đi từ softphone hoặc IP phone.
+        Softphone tạo call_log trước (không có unique_id), AMI event sẽ link unique_id vào.
+        IP phone thuần sẽ tạo call_log mới.
+        """
         channel = data.get('Channel', '')
         context = data.get('Context', '')
         exten = data.get('Exten', '')
         unique_id = data.get('Uniqueid', '')
-        caller_id_num = data.get('CallerIDNum', '')
+        linked_id = data.get('Linkedid', '')
         
         # Chỉ xử lý nếu là cuộc gọi đi (from-internal context)
         if 'from-internal' not in context:
             return
         
-        # Tìm asterisk user từ channel
-        # Channel thường có dạng: PJSIP/100-00000001
+        # Tìm asterisk user từ channel (PJSIP/100-00000001)
         extension = None
         for prefix in ['PJSIP/', 'SIP/', 'IAX2/', 'DAHDI/']:
             if channel.startswith(prefix):
@@ -257,39 +268,73 @@ class AsteriskController(http.Controller):
                 ('extension', '=', extension),
             ], limit=1)
             
-            if asterisk_user and exten and exten not in ['s', 'h']:
-                # Kiểm tra xem đã có call log cho unique_id này chưa
-                existing = request.env['asterisk.call.log'].sudo().search([
-                    ('unique_id', '=', unique_id)
-                ], limit=1)
-                
-                if not existing:
-                    # Tạo call log cho cuộc gọi đi từ IP phone
-                    call_log = request.env['asterisk.call.log'].sudo().create({
-                        'asterisk_user_id': asterisk_user.id,
-                        'direction': 'outgoing',
-                        'phone_number': exten,
-                        'channel': channel,
-                        'unique_id': unique_id,
-                        'state': 'dialing',
-                    })
-                    _logger.info('Created outgoing call log for IP phone: %s -> %s', extension, exten)
-                    
-                    # Gửi thông báo tới user về cuộc gọi đi
-                    self._notify_outgoing_call(call_log)
+            if not asterisk_user or not exten or exten in ['s', 'h']:
+                return
+
+            CallLog = request.env['asterisk.call.log'].sudo()
+
+            # Kiểm tra đã có call log cho unique_id này chưa
+            existing_by_uid = CallLog.search([
+                ('unique_id', '=', unique_id)
+            ], limit=1)
+            if existing_by_uid:
+                return
+
+            # Tìm call_log pending (chưa có unique_id, cùng extension, tạo gần đây)
+            # So sánh bằng last 9 digits để tránh lệch format số (0912... vs 912...)
+            cutoff = fields.Datetime.now() - timedelta(seconds=30)
+            exten_digits = ''.join(filter(str.isdigit, exten))
+            exten_last9 = exten_digits[-9:] if len(exten_digits) >= 9 else exten_digits
+
+            pending_candidates = CallLog.search([
+                ('asterisk_user_id', '=', asterisk_user.id),
+                ('direction', '=', 'outgoing'),
+                ('state', 'in', ['dialing', 'ringing']),
+                ('unique_id', '=', False),
+                ('start_time', '>=', cutoff),
+            ], order='id desc', limit=10)
+
+            pending_softphone = False
+            for cand in pending_candidates:
+                cand_digits = ''.join(filter(str.isdigit, cand.phone_number or ''))
+                cand_last9 = cand_digits[-9:] if len(cand_digits) >= 9 else cand_digits
+                if cand_last9 and cand_last9 == exten_last9:
+                    pending_softphone = cand
+                    break
+
+            if pending_softphone:
+                # Link AMI unique_id vào softphone call_log đã tạo trước đó
+                pending_softphone.write({
+                    'unique_id': unique_id,
+                    'linked_id': linked_id,
+                    'channel': channel,
+                })
+                _logger.info('Linked AMI unique_id %s to softphone call_log %s (%s -> %s)',
+                             unique_id, pending_softphone.id, extension, exten)
+            else:
+                # IP phone thuần — tạo call_log mới
+                call_log = CallLog.create({
+                    'asterisk_user_id': asterisk_user.id,
+                    'direction': 'outgoing',
+                    'phone_number': exten,
+                    'channel': channel,
+                    'unique_id': unique_id,
+                    'linked_id': linked_id,
+                    'state': 'dialing',
+                })
+                _logger.info('Created outgoing call log for IP phone: %s -> %s', extension, exten)
+                self._notify_outgoing_call(call_log)
 
     def _handle_dial_event(self, data):
         """Xử lý event Dial - khi IP phone bắt đầu quay số"""
-        channel = data.get('Channel', '')
-        dest_channel = data.get('DestChannel', '')
         unique_id = data.get('Uniqueid', '')
-        dial_string = data.get('DialString', '')
+        linked_id = data.get('Linkedid', '')
         
         with request.env.cr.savepoint():
-            # Cập nhật call log nếu đã có
-            call_log = request.env['asterisk.call.log'].sudo().search([
-                ('unique_id', '=', unique_id)
-            ], limit=1)
+            CallLog = request.env['asterisk.call.log'].sudo()
+            call_log = CallLog.search([('unique_id', '=', unique_id)], limit=1)
+            if not call_log and linked_id:
+                call_log = CallLog.search([('linked_id', '=', linked_id)], limit=1)
             
             if call_log:
                 call_log.write({
@@ -402,6 +447,21 @@ class AsteriskController(http.Controller):
                 call_log.write(vals)
                 _logger.info('CDR updated call log %s: %s', call_log.id, list(vals.keys()))
 
+            # Nếu CDR cập nhật recording_url → cập nhật care history đã tạo trước đó (thiếu recording)
+            if vals.get('recording_url') and 'crm.lead.care.history' in request.env:
+                care_histories = request.env['crm.lead.care.history'].sudo().search([
+                    ('call_log_id', '=', call_log.id),
+                    ('record_url', 'in', ['', False]),
+                ])
+                if care_histories:
+                    care_histories.write({'record_url': vals['recording_url']})
+                    _logger.info('Updated recording URL for %d care history record(s) of call_log %s',
+                                 len(care_histories), call_log.id)
+
+            # Nếu cuộc gọi đã answered nhưng chưa có care history (Hangup event bị miss)
+            if call_log.answer_time and call_log.state in ('hangup', 'answered'):
+                self._auto_create_care_history(call_log)
+
     def _build_recording_url(self, recording_path):
         """Xây dựng URL đầy đủ cho file ghi âm"""
         if not recording_path:
@@ -428,10 +488,15 @@ class AsteriskController(http.Controller):
         return recording_path
 
     def _auto_create_care_history(self, call_log):
-        """Tự động tạo crm.lead.care.history khi cuộc gọi kết thúc (đã kết nối)"""
+        """Tự động tạo crm.lead.care.history khi cuộc gọi kết thúc (đã kết nối).
+        Tìm lead trực tiếp bằng phone_sanitized (indexed) thay vì qua partner_id.
+        Tạo care history cho mỗi lead matching.
+        """
         try:
             # Kiểm tra model tồn tại (telesale_crm có thể chưa cài)
             if 'crm.lead.care.history' not in request.env:
+                return
+            if 'crm.lead' not in request.env:
                 return
 
             CareHistory = request.env['crm.lead.care.history'].sudo()
@@ -441,31 +506,66 @@ class AsteriskController(http.Controller):
             if existing:
                 return
 
+            # Tìm leads trực tiếp bằng phone (dùng phone_sanitized index)
+            leads = self._find_leads_by_phone(call_log.phone_number)
+            if not leads:
+                return
+
             call_type = 'out' if call_log.direction == 'outgoing' else 'in'
 
-            vals = {
-                'call_log_id': call_log.id,
-                'call_type': call_type,
-                'user_id': call_log.user_id.id if call_log.user_id else False,
-                'record_url': call_log.recording_url or '',
-                'note': '',
-            }
+            for lead in leads:
+                CareHistory.create({
+                    'lead_id': lead.id,
+                    'call_log_id': call_log.id,
+                    'call_type': call_type,
+                    'user_id': call_log.user_id.id if call_log.user_id else False,
+                    'record_url': call_log.recording_url or '',
+                    'note': '',
+                })
 
-            # Tự động liên kết với lead nếu có partner
-            if call_log.partner_id and 'crm.lead' in request.env:
-                lead = request.env['crm.lead'].sudo().search([
-                    ('partner_id', '=', call_log.partner_id.id),
-                    ('active', '=', True),
-                ], limit=1, order='create_date desc')
-                if lead:
-                    vals['lead_id'] = lead.id
-
-            CareHistory.create(vals)
-            _logger.info('Auto-created care history for call_log %s (direction=%s, phone=%s)',
-                         call_log.id, call_log.direction, call_log.phone_number)
+            _logger.info('Auto-created care history for call_log %s -> %d lead(s) (direction=%s, phone=%s)',
+                         call_log.id, len(leads), call_log.direction, call_log.phone_number)
         except Exception as e:
             _logger.error('Error auto-creating care history for call_log %s: %s',
                           call_log.id, str(e))
+
+    def _find_leads_by_phone(self, phone_number):
+        """Tìm leads theo số điện thoại — dùng phone_sanitized (indexed btree) cho performance.
+        Fallback về ilike nếu phone_sanitized không match.
+        """
+        if not phone_number or 'crm.lead' not in request.env:
+            return request.env['crm.lead']
+
+        Lead = request.env['crm.lead'].sudo()
+        clean_number = ''.join(filter(str.isdigit, phone_number))
+        if not clean_number:
+            return Lead.browse()
+
+        last9 = clean_number[-9:] if len(clean_number) >= 9 else clean_number
+
+        # Ưu tiên phone_sanitized nếu field tồn tại (phone_validation module)
+        if 'phone_sanitized' in Lead._fields:
+            if clean_number.startswith('0') and len(clean_number) >= 10:
+                sanitized = '+84' + clean_number[1:]
+            elif clean_number.startswith('84') and len(clean_number) >= 11:
+                sanitized = '+' + clean_number
+            else:
+                sanitized = '+84' + last9
+
+            leads = Lead.search([
+                ('phone_sanitized', '=', sanitized),
+                ('active', '=', True),
+            ], limit=10)
+            if leads:
+                return leads
+
+        # Fallback: match last 9 digits trên phone field
+        leads = Lead.search([
+            ('phone', 'ilike', last9),
+            ('active', '=', True),
+        ], limit=10)
+
+        return leads
 
     def _notify_outgoing_call(self, call_log):
         """Gửi notification tới user về cuộc gọi đi (từ IP phone)"""
@@ -500,8 +600,8 @@ class AsteriskController(http.Controller):
     def _notify_incoming_call(self, call_log):
         """Gửi notification tới user về cuộc gọi đến - chỉ khi agent online"""
         # Kiểm tra agent có online không - chỉ online mới nhận được cuộc gọi
-        if call_log.asterisk_user_id.status != 'online':
-            _logger.info('[Asterisk] Agent %s is not online (status: %s), skipping incoming call notification',
+        if call_log.asterisk_user_id.status != 'ready':
+            _logger.info('[Asterisk] Agent %s is not ready (status: %s), skipping incoming call notification',
                         call_log.asterisk_user_id.extension, call_log.asterisk_user_id.status)
             return
         
@@ -810,7 +910,9 @@ class AsteriskController(http.Controller):
 
     @http.route('/asterisk/update_call_log', type='jsonrpc', auth='user')
     def update_call_log(self, call_log_id, state, **kwargs):
-        """Cập nhật trạng thái call log (cho softphone)"""
+        """Cập nhật trạng thái call log (cho softphone).
+        Cũng trigger care history khi cuộc gọi kết thúc (safety net nếu AMI Hangup không fire).
+        """
         if not call_log_id:
             return {'success': False, 'error': 'call_log_id is required'}
         
@@ -826,6 +928,12 @@ class AsteriskController(http.Controller):
                 vals['end_time'] = fields.Datetime.now()
             
             call_log.write(vals)
+
+            # Tạo care history khi cuộc gọi kết thúc (đã kết nối)
+            # _auto_create_care_history tự kiểm tra duplicate nên không sợ trùng với AMI Hangup
+            if state in ('hangup',) and call_log.answer_time:
+                self._auto_create_care_history(call_log)
+
             return {'success': True}
         except Exception as e:
             _logger.error('Error updating call log: %s', str(e))
@@ -867,33 +975,74 @@ class AsteriskController(http.Controller):
             return {'success': False, 'error': str(e), 'data': []}
 
     @http.route('/asterisk/save_care_note', type='jsonrpc', auth='user')
-    def save_care_note(self, call_log_id=None, note=None, tag_id=None, call_type=None, **kwargs):
-        """Lưu ghi chú cuộc gọi vào crm.lead.care.history"""
+    def save_care_note(self, call_log_id=None, note=None, tag_ids=None, tag_id=None, call_type=None, call_result=None, **kwargs):
+        """Lưu ghi chú cuộc gọi vào crm.lead.care.history.
+        Nếu đã có care history cho call_log_id → update (upsert).
+        Nếu chưa có → create mới.
+
+        Params:
+            call_log_id: ID của call log
+            note: Ghi chú agent nhập
+            tag_ids: list[int] — danh sách tag IDs (ưu tiên)
+            tag_id: int — single tag ID (backward compat)
+            call_type: 'outgoing' hoặc 'incoming'
+        """
         try:
-            vals = {
-                'note': note or '',
-                'user_id': request.env.uid,
-                'call_type': 'out' if call_type == 'outgoing' else 'in',
-            }
+            CareHistory = request.env['crm.lead.care.history'].sudo()
 
-            if tag_id:
-                vals['tag_ids'] = [(4, int(tag_id))]
+            # Build tag command
+            tag_command = []
+            if tag_ids and isinstance(tag_ids, list):
+                tag_command = [(6, 0, [int(t) for t in tag_ids])]
+            elif tag_id:
+                tag_command = [(4, int(tag_id))]
 
+            # Tìm care history đã tạo tự động cho call_log này
+            existing = False
+            call_log = False
             if call_log_id:
                 call_log = request.env['asterisk.call.log'].sudo().browse(int(call_log_id))
-                if call_log.exists():
-                    vals['call_log_id'] = call_log.id
-                    # Tự động liên kết với lead nếu có partner và partner có lead
-                    if call_log.partner_id:
-                        lead = request.env['crm.lead'].search([
-                            ('partner_id', '=', call_log.partner_id.id),
-                            ('active', '=', True),
-                        ], limit=1, order='create_date desc')
-                        if lead:
-                            vals['lead_id'] = lead.id
+                if not call_log.exists():
+                    call_log = False
+                else:
+                    existing = CareHistory.search([('call_log_id', '=', call_log.id)], limit=1)
 
-            care_history = request.env['crm.lead.care.history'].sudo().create(vals)
-            return {'success': True, 'id': care_history.id}
+            if existing:
+                # UPDATE care history đã tồn tại (auto-created khi hangup)
+                update_vals = {}
+                if note is not None:
+                    update_vals['note'] = note
+                if tag_command:
+                    update_vals['tag_ids'] = tag_command
+                if call_log and call_log.recording_url and not existing.record_url:
+                    update_vals['record_url'] = call_log.recording_url
+
+                if call_result:
+                    update_vals['call_result'] = call_result
+                if update_vals:
+                    existing.write(update_vals)
+                return {'success': True, 'id': existing.id}
+            else:
+                # CREATE mới
+                vals = {
+                    'note': note or '',
+                    'user_id': request.env.uid,
+                    'call_type': 'out' if call_type == 'outgoing' else 'in',
+                }
+                if tag_command:
+                    vals['tag_ids'] = tag_command
+                if call_result:
+                    vals['call_result'] = call_result
+
+                if call_log:
+                    vals['call_log_id'] = call_log.id
+                    vals['record_url'] = call_log.recording_url or ''
+                    leads = self._find_leads_by_phone(call_log.phone_number)
+                    if leads:
+                        vals['lead_id'] = leads[0].id
+
+                care_history = CareHistory.create(vals)
+                return {'success': True, 'id': care_history.id}
         except Exception as e:
             _logger.error('Error saving care note: %s', str(e))
             return {'success': False, 'error': str(e)}

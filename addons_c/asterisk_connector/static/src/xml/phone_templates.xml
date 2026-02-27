@@ -91,74 +91,63 @@
             
             <!-- Active Call Panel -->
             <div class="active_call_section" t-if="serviceState.activeCall">
-                <div class="active_call_info">
-                    <div class="call_avatar">
-                        <t t-if="serviceState.activeCall.partner and serviceState.activeCall.partner.image">
-                            <img t-att-src="serviceState.activeCall.partner.image" alt="Caller"/>
-                        </t>
-                        <t t-else="">
-                            <i class="fa fa-user"/>
-                        </t>
-                    </div>
-                    <div class="call_details">
-                        <div class="call_name" t-esc="activeCallerName"/>
-                        <div class="call_number" t-esc="serviceState.activeCall.phoneNumber"/>
-                        <div class="call_timer" t-att-class="{ 'dialing': isDialing }" t-esc="callStatusText"/>
-                    </div>
-                    <div class="call_status_badges">
-                        <span t-if="isDialing" class="status_badge dialing"><i class="fa fa-phone fa-flip-horizontal"/> Đang gọi</span>
-                        <span t-if="state.isOnHold" class="status_badge hold"><i class="fa fa-pause"/> Giữ máy</span>
-                        <span t-if="state.isMuted" class="status_badge muted"><i class="fa fa-microphone-slash"/> Tắt mic</span>
+                <!-- Header: Name + Phone + Timer -->
+                <div class="active_call_header">
+                    <div class="call_name_large" t-esc="activeCallerName"/>
+                    <div class="call_number_sub" t-esc="serviceState.activeCall.phoneNumber"/>
+                    <div class="call_timer_badge">
+                        <i class="fa fa-clock-o"/>
+                        <span t-esc="callStatusText"/>
                     </div>
                 </div>
-                
-                <div class="active_call_controls">
-                    <button class="call_ctrl_btn" t-att-class="{ active: state.isMuted }" 
-                            t-on-click="toggleMute" title="Tắt/Bật mic">
-                        <i t-att-class="state.isMuted ? 'fa fa-microphone-slash' : 'fa fa-microphone'"/>
-                    </button>
-                    <button class="call_ctrl_btn" t-att-class="{ active: state.isOnHold }"
+
+                <div class="active_call_separator"/>
+
+                <!-- Care Note: Kết quả kết nối -->
+                <div class="incall_care_section">
+                    <div class="incall_care_label">
+                        <i class="fa fa-phone text-primary"/>
+                        <span>Kết quả kết nối</span>
+                    </div>
+                    <div class="incall_care_select_wrapper">
+                        <select class="incall_care_select" t-on-change="onCallResultChange">
+                            <option value="">Chọn kết quả kết nối</option>
+                            <t t-foreach="callResultOptions" t-as="opt" t-key="opt.value">
+                                <option t-att-value="opt.value"
+                                        t-att-selected="state.careResult === opt.value"
+                                        t-esc="opt.label"/>
+                            </t>
+                        </select>
+                        <i class="fa fa-chevron-down incall_care_select_arrow"/>
+                    </div>
+                </div>
+
+                <!-- Care Note: Ghi chú -->
+                <div class="incall_care_section">
+                    <div class="incall_care_label">
+                        <i class="fa fa-file-text-o text-primary"/>
+                        <span>Ghi chú</span>
+                    </div>
+                    <textarea class="incall_care_textarea"
+                              rows="3"
+                              placeholder="Nhập ghi chú về cuộc gọi..."
+                              t-on-input="onCareNoteInput"
+                              t-att-value="state.careNote"/>
+                </div>
+
+                <!-- Bottom Controls: Hold, Mute, Hangup -->
+                <div class="active_call_controls_bottom">
+                    <button class="call_ctrl_circle" t-att-class="{ active: state.isOnHold }"
                             t-on-click="toggleHold" title="Giữ máy">
                         <i class="fa fa-pause"/>
                     </button>
-                    <button class="call_ctrl_btn" t-att-class="{ active: state.showInCallDialpad }"
-                            t-on-click="toggleInCallDialpad" title="Bàn phím">
-                        <i class="fa fa-th"/>
+                    <button class="call_ctrl_circle" t-att-class="{ active: state.isMuted }"
+                            t-on-click="toggleMute" title="Tắt/Bật mic">
+                        <i t-att-class="state.isMuted ? 'fa fa-microphone-slash' : 'fa fa-microphone'"/>
                     </button>
-                    <button class="call_ctrl_btn hangup" t-on-click="hangupActiveCall" title="Kết thúc">
+                    <button class="call_ctrl_circle hangup" t-on-click="hangupActiveCall" title="Kết thúc">
                         <i class="fa fa-phone fa-rotate-135"/>
                     </button>
-                    <button class="call_ctrl_btn" t-att-class="{ active: state.showTransferPanel }"
-                            t-on-click="toggleTransferPanel" title="Chuyển cuộc gọi">
-                        <i class="fa fa-exchange"/>
-                    </button>
-                </div>
-                
-                <!-- In-call Dialpad -->
-                <div class="in_call_dialpad" t-if="state.showInCallDialpad">
-                    <div class="dialpad_grid">
-                        <t t-foreach="state.dialpadKeys" t-as="key" t-key="key.main">
-                            <button class="dialpad_key" t-on-click="() => this.sendDTMF(key.main)">
-                                <span class="key_main" t-esc="key.main"/>
-                                <span class="key_sub" t-esc="key.sub"/>
-                            </button>
-                        </t>
-                    </div>
-                </div>
-                
-                <!-- Transfer Panel -->
-                <div class="transfer_panel" t-if="state.showTransferPanel">
-                    <input type="text" class="transfer_input" 
-                           t-model="state.transferSearch"
-                           placeholder="Nhập số hoặc tìm extension..."/>
-                    <div class="transfer_list">
-                        <t t-foreach="filteredExtensions" t-as="ext" t-key="ext.id">
-                            <div class="transfer_item" t-on-click="() => this.transferTo(ext.extension)">
-                                <span class="transfer_ext" t-esc="ext.extension"/>
-                                <span class="transfer_name" t-esc="ext.user_name"/>
-                            </div>
-                        </t>
-                    </div>
                 </div>
             </div>
             
@@ -394,6 +383,7 @@
                     <i class="fa fa-save"/> Lưu
                 </button>
             </div>
+            
         </div>
     </t>
 

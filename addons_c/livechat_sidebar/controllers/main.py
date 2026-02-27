@@ -101,8 +101,7 @@ class LivechatSidebarController(http.Controller):
             return {'error': 'No livechat channel configured.'}
         # Build channel name
         visitor_name = partner.name or phone
-        operator_name = request.env.user.livechat_username or request.env.user.name
-        channel_name = '%s %s' % (visitor_name, operator_name)
+        channel_name = visitor_name
         channel = request.env['discuss.channel'].sudo().create({
             'channel_member_ids': [
                 Command.create({

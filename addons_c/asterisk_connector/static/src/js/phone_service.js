@@ -16,6 +16,8 @@ export const asteriskPhoneService = {
             userConfig: null,
             activeCall: null,
             incomingCall: null,
+            endedCall: null,
+            crmTags: [],
             callHistory: [],
             extensions: [],
             isWidgetOpen: false,
@@ -558,8 +560,6 @@ export const asteriskPhoneService = {
                 state.activeCall = null;
                 state.incomingCall = null;
                 stopRingtone();
-                // Clear saved state
-
             }
         }
 
@@ -977,9 +977,7 @@ export const asteriskPhoneService = {
             // === CASE 1: SOFTPHONE - Hangup qua SIP ===
             if (activeCallType === 'softphone' && hasSIPActiveCall()) {
                 console.log("Hanging up softphone call via SIP");
-                hangupSIPCall();
-                state.activeCall = null;
-                state.incomingCall = null;
+                hangupSIPCall();  // cleanupSIPCall will store endedCall
                 notification.add("Cuộc gọi đã kết thúc (Softphone)", {type: "info"});
                 return;
             }
@@ -1037,7 +1035,7 @@ export const asteriskPhoneService = {
 
         // Hold call - phân tách theo call_type
         async function holdCall(hold = true) {
-            if (!state.activeCall?.channel) {
+            if (!state.activeCall) {
                 notification.add("Không có cuộc gọi đang hoạt động", {type: "warning"});
                 return false;
             }
@@ -1239,6 +1237,47 @@ export const asteriskPhoneService = {
             }
         }
 
+        // Load CRM tags for care note popup
+        async function loadCrmTags() {
+            try {
+                const result = await rpc("/asterisk/get_crm_tags");
+                if (result.success) {
+                    state.crmTags = result.data || [];
+                }
+            } catch (error) {
+                console.error('[PhoneService] Load CRM tags error:', error);
+            }
+        }
+
+        // Save care note (called during/after active call)
+        async function saveCareNote(callLogId, note, tagIds, callResult, direction) {
+            try {
+                const result = await rpc("/asterisk/save_care_note", {
+                    call_log_id: callLogId,
+                    note: note || '',
+                    tag_ids: tagIds || [],
+                    call_result: callResult || '',
+                    call_type: direction || 'outgoing',
+                });
+                if (result.success) {
+                    notification.add('Đã lưu ghi chú cuộc gọi', {type: 'success'});
+                    return true;
+                } else {
+                    notification.add(result.error || 'Không thể lưu ghi chú', {type: 'danger'});
+                    return false;
+                }
+            } catch (error) {
+                console.error('[PhoneService] Save care note error:', error);
+                notification.add('Lỗi khi lưu ghi chú', {type: 'danger'});
+                return false;
+            }
+        }
+
+        // Dismiss care note popup without saving (kept for compatibility)
+        function dismissCareNote() {
+            state.endedCall = null;
+        }
+
         // Format duration
         function formatDuration(seconds) {
             const mins = Math.floor(seconds / 60);
@@ -1283,6 +1322,9 @@ export const asteriskPhoneService = {
             dismissIncomingCall,
             formatDuration,
             testIncomingCall,
+            loadCrmTags,
+            saveCareNote,
+            dismissCareNote,
         };
     },
 };

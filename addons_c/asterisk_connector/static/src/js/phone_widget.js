@@ -6,6 +6,7 @@ import {registry} from "@web/core/registry";
 
 export class PhoneWidget extends Component {
     static template = "asterisk_connector.PhoneWidget";
+    static components = {};
     static props = {};
 
     setup() {
@@ -22,6 +23,8 @@ export class PhoneWidget extends Component {
             isOnHold: false,
             showTransferPanel: false,
             showInCallDialpad: false,
+            careResult: "",
+            careNote: "",
             // Settings tab state
             availableExtensions: [],
             selectedExtension: null,
@@ -81,7 +84,7 @@ export class PhoneWidget extends Component {
                 this.startCallTimer();
             }
             // Check for active call changes periodically
-            this._checkCallStateInterval = setInterval(() => {
+            this._checkCallStateInterval = setInterval(async () => {
                 const activeCall = this.serviceState.activeCall;
                 if (activeCall) {
                     // Call is active — keep tracking its data
@@ -91,16 +94,34 @@ export class PhoneWidget extends Component {
                     this._lastActiveCallData = {
                         callLogId: activeCall.callLogId,
                         direction: activeCall.direction,
+                        phoneNumber: activeCall.phoneNumber,
+                        partner: activeCall.partner || null,
+                        answerTime: activeCall.answerTime || null,
+                        startTime: activeCall.startTime || null,
                     };
                 } else if (this._lastActiveCallData) {
                     // Call just ended automatically (other party hung up / AMI event)
                     const lastCall = this._lastActiveCallData;
                     this._lastActiveCallData = null;
                     this.stopCallTimer();
+
+                    // Auto-save care note with data collected during the call
+                    if (lastCall.callLogId) {
+                        await this.phoneService.saveCareNote(
+                            lastCall.callLogId,
+                            this.state.careNote,
+                            [],
+                            this.state.careResult,
+                            lastCall.direction,
+                        );
+                    }
+
                     this.state.isMuted = false;
                     this.state.isOnHold = false;
                     this.state.showTransferPanel = false;
                     this.state.showInCallDialpad = false;
+                    this.state.careResult = "";
+                    this.state.careNote = "";
                     this.state.activeTab = "dialpad";
                 }
             }, 500);
@@ -128,6 +149,25 @@ export class PhoneWidget extends Component {
         const active = this.serviceState.activeCall;
         if (!active) return "";
         return active.partner?.name || active.callerId || active.phoneNumber || "Cuộc gọi";
+    }
+
+    get callResultOptions() {
+        return [
+            {value: 'connected', label: 'Kết nối thành công'},
+            {value: 'no_answer', label: 'Không trả lời'},
+            {value: 'busy', label: 'Máy bận'},
+            {value: 'rejected', label: 'Từ chối cuộc gọi'},
+            {value: 'unreachable', label: 'Không liên lạc được'},
+            {value: 'wrong_number', label: 'Sai số'},
+        ];
+    }
+
+    onCallResultChange(ev) {
+        this.state.careResult = ev.target.value;
+    }
+
+    onCareNoteInput(ev) {
+        this.state.careNote = ev.target.value;
     }
 
     get filteredExtensions() {
@@ -433,15 +473,33 @@ export class PhoneWidget extends Component {
     }
 
     async hangupActiveCall() {
-        const channel = this.serviceState.activeCall?.channel;
+        const activeCall = this.serviceState.activeCall;
+        const channel = activeCall?.channel;
+        const callLogId = activeCall?.callLogId;
+        const direction = activeCall?.direction;
+
         // Clear tracked data so _checkCallStateInterval doesn't double-trigger
         this._lastActiveCallData = null;
+
+        // Save care note before hanging up
+        if (callLogId) {
+            await this.phoneService.saveCareNote(
+                callLogId,
+                this.state.careNote,
+                [],
+                this.state.careResult,
+                direction,
+            );
+        }
+
         await this.phoneService.hangupCall(channel);
         this.stopCallTimer();
         this.state.isMuted = false;
         this.state.isOnHold = false;
         this.state.showTransferPanel = false;
         this.state.showInCallDialpad = false;
+        this.state.careResult = "";
+        this.state.careNote = "";
         // Return to dialpad tab
         this.state.activeTab = "dialpad";
     }

@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from datetime import timedelta
-from odoo import models, fields, api, _
+from odoo import models, fields, api
 
 _logger = logging.getLogger(__name__)
 
@@ -100,20 +99,37 @@ class AsteriskCallLog(models.Model):
         return super().create(vals_list)
 
     def _find_partner_by_phone(self, phone_number):
-        """Tìm partner từ số điện thoại"""
+        """Tìm partner từ số điện thoại — ưu tiên phone_sanitized (indexed) cho performance."""
         if not phone_number:
             return False
-        
-        # Làm sạch số điện thoại
+
         clean_number = ''.join(filter(str.isdigit, phone_number))
-        
-        # Tìm theo trường phone
-        partner = self.env['res.partner'].search([
-            '|',
-            ('phone', 'ilike', clean_number[-9:]),
-            ('phone', 'ilike', phone_number),
+        if not clean_number:
+            return False
+
+        Partner = self.env['res.partner']
+        last9 = clean_number[-9:] if len(clean_number) >= 9 else clean_number
+
+        # Ưu tiên phone_sanitized nếu field tồn tại (phone_validation module)
+        if 'phone_sanitized' in Partner._fields:
+            if clean_number.startswith('0') and len(clean_number) >= 10:
+                sanitized = '+84' + clean_number[1:]
+            elif clean_number.startswith('84') and len(clean_number) >= 11:
+                sanitized = '+' + clean_number
+            else:
+                sanitized = '+84' + last9
+
+            partner = Partner.search([
+                ('phone_sanitized', '=', sanitized),
+            ], limit=1)
+            if partner:
+                return partner
+
+        # Fallback: ilike last 9 digits trên phone
+        partner = Partner.search([
+            ('phone', 'ilike', last9),
         ], limit=1)
-        
+
         return partner
 
     def action_view_partner(self):
@@ -174,8 +190,28 @@ class AsteriskCallLog(models.Model):
 
     @api.model
     def update_call_state(self, unique_id, state, **kwargs):
-        """Cập nhật trạng thái cuộc gọi từ AMI event"""
+        """Cập nhật trạng thái cuộc gọi từ AMI event.
+        Tìm call_log theo unique_id trước, fallback sang linked_id,
+        rồi fallback sang channel nếu có.
+        """
         call_log = self.search([('unique_id', '=', unique_id)], limit=1)
+        if not call_log and unique_id:
+            call_log = self.search([('linked_id', '=', unique_id)], limit=1)
+
+        # Fallback: tìm theo channel nếu có (cho trường hợp unique_id chưa được link)
+        if not call_log and kwargs.get('channel'):
+            call_log = self.search([
+                ('channel', '=', kwargs['channel']),
+                ('state', 'not in', ['hangup', 'failed']),
+            ], limit=1, order='id desc')
+            # Nếu tìm được, cập nhật luôn unique_id/linked_id
+            if call_log and unique_id:
+                link_vals = {'unique_id': unique_id}
+                if kwargs.get('linked_id'):
+                    link_vals['linked_id'] = kwargs['linked_id']
+                call_log.write(link_vals)
+                _logger.info('Linked unique_id %s to call_log %s via channel fallback', unique_id, call_log.id)
+
         if call_log:
             vals = {'state': state}
             

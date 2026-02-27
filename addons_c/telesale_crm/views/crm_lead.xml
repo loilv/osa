@@ -11,15 +11,16 @@
                 </header>
                 <field name="phone" widget="asterisk_phone"/>
                 <field name="campaign_id" optional="show"/>
+                <field name="note" optional="show"/>
                 <field name="stage_id" optional="show"/>
-                <field name="tag_ids" optional="show"/>
+                <field name="tag_ids" optional="show" widget="many2many_tags"/>
                 <field name="partner_id" optional="show"/>
                 <field name="user_id" optional="show"/>
-                <field name="last_call_time" optional="show"/>
-                <field name="call_back_time" optional="show"/>
-                <field name="date_insurance" optional="show"/>
-                <field name="record_url" optional="show"/>
-                <field name="lost_reason_id" optional="show"/>
+                <field name="last_call_time" optional="hide"/>
+                <field name="call_back_time" optional="hide"/>
+                <field name="date_insurance" optional="hide"/>
+                <field name="record_url" optional="hide"/>
+                <field name="lost_reason_id" optional="hide"/>
                 <button name="assign_tag" icon="fa-tags" type="object" string="Gán nhãn" class="oe_highlight"/>
                 <button name="make_order" icon="fa-reorder" type="object" string="Cấp đơn" class="oe_highlight"/>
             </list>
@@ -84,9 +85,29 @@
                     <notebook>
                         <page string="Lịch sử chăm sóc">
                             <field name="care_history_ids" readonly="1">
+                                <form string="care_history_form">
+                                    <sheet>
+                                        <group>
+                                            <group>
+                                                <field name="lead_id"/>
+                                                <field name="user_id"/>
+                                            </group>
+                                            <group>
+                                                <field name="call_result"/>
+                                                <field name="tag_ids" widget="many2many_tags"/>
+                                            </group>
+                                        </group>
+                                        <group>
+                                            <field name="note"/>
+                                            <field name="record_url"/>
+                                        </group>
+                                    </sheet>
+                                </form>
                                 <list>
+                                    <field name="create_date" string="Thời gian"/>
                                     <field name="call_type"/>
                                     <field name="tag_ids" widget="many2many_tags"/>
+                                    <field name="call_result"/>
                                     <field name="note"/>
                                     <field name="user_id"/>
                                     <field name="record_url"/>

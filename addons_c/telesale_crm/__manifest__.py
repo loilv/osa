@@ -14,9 +14,6 @@
         'views/crm_lead.xml',
         'views/action_view.xml',
     ],
-    'assets': {
-
-    },
     'installable': True,
     'auto_install': False,
     'application': True,

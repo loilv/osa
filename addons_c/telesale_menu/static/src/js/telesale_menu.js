@@ -305,8 +305,13 @@ export class SystrayActiveTime extends Component {
             activeTime: "00:00:00",
         });
 
-        this._onStatusChanged = () => {
-            this._startTime = Date.now();
+        this._onStatusChanged = (ev) => {
+            const { status_change_time } = ev.detail || {};
+            if (status_change_time) {
+                this._startTime = new Date(status_change_time).getTime();
+            } else {
+                this._startTime = Date.now();
+            }
             this.state.activeTime = "00:00:00";
         };
 
@@ -345,15 +350,15 @@ export class SystrayActiveTime extends Component {
 // ============================================================
 // Register components
 // ============================================================
-registry.category("main_components").add("TelesaleMenu", {
-    Component: TelesaleMenu,
-    props: {},
-});
-
-registry.category("main_components").add("NavbarBreadcrumb", {
-    Component: NavbarBreadcrumb,
-    props: {},
-});
+// registry.category("main_components").add("TelesaleMenu", {
+//     Component: TelesaleMenu,
+//     props: {},
+// });
+//
+// registry.category("main_components").add("NavbarBreadcrumb", {
+//     Component: NavbarBreadcrumb,
+//     props: {},
+// });
 
 registry.category("systray").add("telesale_menu.SystrayDateTime", {
     Component: SystrayDateTime,
@@ -364,16 +369,16 @@ registry.category("systray").add("telesale_menu.SystrayActiveTime", {
 }, { sequence: 190 });
 
 
-// ============================================================
-// Patch WebClient: show grid home menu after login instead of
-// auto-loading the first app
-// ============================================================
-patch(WebClient.prototype, {
-    _loadDefaultApp() {
-        if (document.body.classList.contains("o_telesale_menu_enabled")) {
-            window.dispatchEvent(new CustomEvent(SHOW_HOME_EVENT));
-            return;
-        }
-        return super._loadDefaultApp();
-    },
-});
+// // ============================================================
+// // Patch WebClient: show grid home menu after login instead of
+// // auto-loading the first app
+// // ============================================================
+// patch(WebClient.prototype, {
+//     _loadDefaultApp() {
+//         if (document.body.classList.contains("o_telesale_menu_enabled")) {
+//             window.dispatchEvent(new CustomEvent(SHOW_HOME_EVENT));
+//             return;
+//         }
+//         return super._loadDefaultApp();
+//     },
+// });
