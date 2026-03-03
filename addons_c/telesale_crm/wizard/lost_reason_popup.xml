@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="lost_reason_view_form" model="ir.ui.view">
+            <field name="name">lost.reason</field>
+            <field name="model">crm.lost.reason.wizard</field>
+            <field name="arch" type="xml">
+                <form string="lost_reason_form">
+                    <sheet>
+                        <group>
+                            <field name="lost_reason_id"/>
+                            <field name="date_insurance" required="lost_reason_code == 'purchased'" invisible="lost_reason_code != 'purchased'"/>
+                            <field name="note"/>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button string="Lưu" type="object" name="action_done" class="btn btn-primary"/>
+                        <button string="Huỷ" special="cancel" class="btn btn-secondary"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="lost_reason_popup_action" model="ir.actions.act_window">
+            <field name="name">Lý do mất</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">crm.lost.reason.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+    </data>
+</odoo>

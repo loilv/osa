@@ -18,7 +18,10 @@ class LeadCareHistory(models.Model):
         ('unreachable', 'Không liên lạc được'),
         ('wrong_number', 'Sai số'),
     ], string='Kết quả kết nối')
-    tag_ids = fields.Many2many('crm.tag', string='Tags')
+    date_callback = fields.Datetime(string='Thời gian gọi lại')
+    tag_ids = fields.Many2many('crm.tag', string='Nhãn')
+    stage_id = fields.Many2one('crm.stage', string='Trạng thái')
+    lost_reason_id = fields.Many2one('crm.lost.reason', 'Lý do thất bại')
     note = fields.Text('Ghi chú')
     user_id = fields.Many2one('res.users', string='Người thực hiện')
     record_url = fields.Char(string='File ghi âm')

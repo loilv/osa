@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="zalo_chat_wizard_view_form" model="ir.ui.view">
+            <field name="name">zalo.chat.wizard.form</field>
+            <field name="model">zalo.chat.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Gửi lời mời kết bạn Zalo">
+                    <field name="lookup_done" invisible="1"/>
+                    <field name="friend_request_sent" invisible="1"/>
+                    <field name="zalo_id" invisible="1"/>
+                    <field name="phone" invisible="1"/>
+                    <field name="lead_name" invisible="1"/>
+                    <field name="error_message" invisible="1"/>
+
+                    <!-- Error message -->
+                    <div invisible="not error_message" class="alert alert-warning m-3" role="alert">
+                        <field name="error_message" readonly="1" nolabel="1" force_save="1"/>
+                    </div>
+
+                    <!-- Zalo user card -->
+                    <div invisible="not zalo_display_name" class="border rounded p-3 mx-3 mt-3 mb-2"
+                         style="border-color: #c8e6c9 !important; background: #fafafa;">
+                        <div class="d-flex align-items-center gap-3">
+                            <field name="zalo_avatar_url" widget="image_url"
+                                   options="{'size': [52, 52]}"
+                                   class="rounded-circle" nolabel="1"/>
+                            <div>
+                                <div class="text-muted small">Người gửi lời mời</div>
+                                <div class="fw-bold fs-5">
+                                    <field name="zalo_display_name" readonly="1" nolabel="1"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Friend request sent badge -->
+                    <div invisible="not friend_request_sent" class="text-center my-3">
+                        <span class="badge bg-success fs-6 px-3 py-2">
+                            <i class="fa fa-check me-1"/>Đã gửi lời mời kết bạn
+                        </span>
+                    </div>
+
+                    <!-- Friend request form: only when not sent -->
+                    <div invisible="friend_request_sent or not lookup_done or error_message"
+                         class="mx-3 mb-3">
+                        <label for="friend_message" class="fw-bold">Nội dung lời mời</label>
+                        <field name="friend_message" widget="text" nolabel="1"
+                               placeholder="Nhập lời nhắn kèm theo lời mời kết bạn..."/>
+                    </div>
+
+                    <footer>
+                        <button string="Gửi lời mời" type="object"
+                                name="action_send_friend_request"
+                                class="btn btn-success"
+                                icon="fa-user-plus"
+                                invisible="friend_request_sent or not lookup_done or error_message"/>
+                        <button string="Đóng" special="cancel" class="btn btn-secondary"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="zalo_chat_wizard_action" model="ir.actions.act_window">
+            <field name="name">Zalo</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">zalo.chat.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+    </data>
+</odoo>

@@ -4,16 +4,17 @@
         <field name="name">crm_oppo_list_view</field>
         <field name="model">crm.lead</field>
         <field name="arch" type="xml">
-            <list string="crm_oppo_list_view" create="false" delete="false">
+            <list string="crm_oppo_list_view">
                 <header>
-                    <button name="get_lead" type="object" string="Lấy thêm cơ hội" display="always"/>
-                    <button name="assign_agent" type="object" string="Chia cơ hội"/>
+                    <button name="get_lead" confirm="Bạn có chắc chắn muốn lấy thêm cơ hội không?" type="object"
+                            string="Lấy thêm cơ hội" display="always"/>
+                    <button name="%(telesale_crm.assign_lead_action)d" type="action" string="Phân bổ cơ hội"/>
                 </header>
                 <field name="phone" widget="asterisk_phone"/>
                 <field name="campaign_id" optional="show"/>
-                <field name="note" optional="show"/>
+                <field name="note" optional="hide"/>
                 <field name="stage_id" optional="show"/>
-                <field name="tag_ids" optional="show" widget="many2many_tags"/>
+                <field name="tag_ids" optional="show" widget="many2many_tags" options="{'color_field': 'color'}"/>
                 <field name="partner_id" optional="show"/>
                 <field name="user_id" optional="show"/>
                 <field name="last_call_time" optional="hide"/>
@@ -31,25 +32,29 @@
         <field name="name">crm_oppo_view_form</field>
         <field name="model">crm.lead</field>
         <field name="arch" type="xml">
-            <form string="crm_oppo_form" create="false" delete="false">
+            <form string="crm_oppo_form">
                 <header>
-                    <button name="action_set_won_rainbowman" string="Won"
-                            type="object" class="oe_highlight" data-hotkey="w" title="Mark as won"
-                            invisible="won_status == 'won' or type == 'lead' or not active"/>
+                    <button name="action_call" icon="fa-phone" string="Gọi"
+                            type="object" class="btn btn-success"/>
                     <button name="action_chat_zalo" icon="fa-comments" string="Chat Zalo"
-                            type="object" class="oe_highlight" data-hotkey="w"/>
-                    <button name="action_set_won_rainbowman" string="Loại bỏ"
-                            type="object" class="btn btn-danger" data-hotkey="w" title="Mark as won"
-                            invisible="won_status == 'won' or type == 'lead' or not active"/>
+                            type="object" class="btn btn-success"/>
+                    <button name="action_send_friend_request_zalo" icon="fa-user-plus" string="Kết bạn Zalo"
+                            type="object" class="btn btn-success"/>
+                    <button name="%(telesale_crm.lost_reason_popup_action)d" string="Loại bỏ"
+                            type="action" class="btn btn-danger"
+                            invisible="won_status != 'pending' or not active"/>
                     <button name="action_set_won_rainbowman" string="Cấp đơn"
-                            type="object" class="btn btn-success" data-hotkey="w" title="Mark as won"
+                            type="object" class="btn btn-success" title="Mark as won"
                             invisible="won_status == 'won' or type == 'lead' or not active"/>
-                    <button name="action_set_won_rainbowman" string="Tư Vấn"
-                            type="object" class="oe_highlight" data-hotkey="w" title="Mark as won"
+                    <button name="action_consultant" string="Tư Vấn"
+                            type="object" class="btn btn-success"
+                            confirm="Bạn xác nhận khách có nhu cầu tư vấn?"
                             invisible="won_status == 'won' or type == 'lead' or not active"/>
-                    <button name="action_set_won_rainbowman" string="Hẹn gọi lại"
-                            type="object" class="btn btn-warning" icon="fa-calendar-plus-o" data-hotkey="w"
-                            title="Mark as won"
+                    <button name="action_set_won_rainbowman" string="Thành công"
+                            type="object" class="btn btn-success" title="Thành công"
+                            invisible="won_status == 'won' or type == 'lead' or not active"/>
+                    <button name="%(telesale_crm.schedule_callback_action)d" string="Hẹn gọi lại"
+                            type="action" class="btn btn-success" icon="fa-calendar-plus-o"
                             invisible="won_status == 'won' or type == 'lead' or not active"/>
                     <field name="stage_id" widget="rotting_statusbar_duration"
                            options="{'clickable': '1', 'fold_field': 'fold'}"
@@ -57,29 +62,55 @@
                            invisible="type == 'lead'" readonly="won_status == 'lost' or not active"/>
                 </header>
                 <sheet>
+                    <field name="active" invisible="1"/>
+                    <field name="won_status" invisible="1"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_schedule_meeting" type="object"
+                                class="oe_stat_button" icon="fa-calendar"
+                                context="{'partner_id': partner_id}"
+                                invisible="not id or type == 'lead'">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">
+                                    <field name="meeting_display_label"/>
+                                </span>
+                                <field name="meeting_display_date" class="o_stat_value"
+                                       invisible="not meeting_display_date"/>
+                            </div>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active or won_status in ['lost', 'won']"/>
+                    <widget name="web_ribbon" title="Lost" bg_color="text-bg-danger" invisible="won_status != 'lost'"/>
+                    <widget name="web_ribbon" title="Won" invisible="won_status != 'won'"/>
                     <div class="d-flex justify-content-between align-items-center">
                         <h1 class="flex-grow-1">
-                            <field class="text-break" options="{'line_breaks': False}" widget="text" name="name"
+                            <field class="text-break" readonly="won_status == 'lost'" options="{'line_breaks': False}"
+                                   widget="text" name="name"
                                    placeholder="Cơ hội"/>
                         </h1>
                     </div>
                     <group>
                         <group string="Thông tin cơ hội">
-                            <field name="stage_id"/>
-                            <field name="tag_ids" widget="many2many_tags"/>
-                            <field name="user_id"/>
-                            <field name="call_back_time"/>
-                            <field name="lost_reason_id"/>
+                            <field name="stage_id" readonly="won_status == 'lost'"/>
+                            <field name="tag_ids" readonly="won_status == 'lost'" widget="many2many_tags"
+                                   options="{'color_field': 'color'}"/>
+                            <field name="user_id" readonly="won_status == 'lost'"/>
+                            <field name="call_back_time" readonly="won_status == 'lost'"/>
+                            <field name="lost_reason_id" readonly="won_status == 'lost'"/>
+                            <field name="stage_note" readonly="won_status == 'lost'"
+                                   invisible="stage_note == False"/>
                         </group>
 
                         <group string="Thông tin định danh khách hàng">
-                            <field name="partner_id"/>
-                            <field name="phone" widget="asterisk_phone"/>
-                            <field name="email_from"/>
+                            <field name="partner_id" readonly="won_status == 'lost'"/>
+                            <field name="gender" readonly="won_status == 'lost'"/>
+                            <field name="date_of_birth" readonly="won_status == 'lost'"/>
+                            <field name="phone" readonly="won_status == 'lost'" widget="asterisk_phone"/>
+                            <field name="email_from" readonly="won_status == 'lost'"/>
                         </group>
                     </group>
                     <group>
-                        <field name="note" string="Mô tả"/>
+                        <field name="note" readonly="won_status == 'lost'" string="Mô tả"/>
                     </group>
 
                     <notebook>
@@ -94,7 +125,8 @@
                                             </group>
                                             <group>
                                                 <field name="call_result"/>
-                                                <field name="tag_ids" widget="many2many_tags"/>
+                                                <field name="tag_ids" widget="many2many_tags"
+                                                       options="{'color_field': 'color'}"/>
                                             </group>
                                         </group>
                                         <group>
@@ -104,86 +136,98 @@
                                     </sheet>
                                 </form>
                                 <list>
-                                    <field name="create_date" string="Thời gian"/>
-                                    <field name="call_type"/>
-                                    <field name="tag_ids" widget="many2many_tags"/>
-                                    <field name="call_result"/>
-                                    <field name="note"/>
-                                    <field name="user_id"/>
-                                    <field name="record_url"/>
+
+                                    <field name="call_type" optional="hide"/>
+                                    <field name="tag_ids" widget="many2many_tags" optional="show" options="{'color_field': 'color'}"/>
+                                    <field name="call_result" optional="show"/>
+                                    <field name="stage_id" optional="show"/>
+                                    <field name="note" optional="show"/>
+                                    <field name="user_id" optional="show"/>
+                                    <field name="create_date" string="Thời gian" optional="show"/>
+                                    <field name="date_callback" optional="show"/>
+                                    <field name="record_url" optional="show"/>
                                 </list>
                             </field>
                         </page>
                         <page string="Thông tin đăng kiểm">
                             <group col="2">
                                 <group>
-                                    <field name="vehicle_type"/>
-                                    <field name="brand"/>
-                                    <field name="model"/>
-                                    <field name="chassis_number"/>
-                                    <field name="engine_number"/>
-                                    <field name="seat_capacity"/>
-                                    <field name="business_transport"/>
-                                    <field name="color"/>
-                                    <field name="fuel_type"/>
-                                    <field name="inspection_expiry_date"/>
-                                    <field name="cylinder_capacity"/>
-                                    <field name="container_size"/>
-                                    <field name="axle_length"/>
-                                    <field name="engine_power_rpm"/>
+                                    <field name="vehicle_type" readonly="won_status == 'lost'"/>
+                                    <field name="brand" readonly="won_status == 'lost'"/>
+                                    <field name="model" readonly="won_status == 'lost'"/>
+                                    <field name="chassis_number" readonly="won_status == 'lost'"/>
+                                    <field name="engine_number" readonly="won_status == 'lost'"/>
+                                    <field name="seat_capacity" readonly="won_status == 'lost'"/>
+                                    <field name="business_transport" readonly="won_status == 'lost'"/>
+                                    <field name="color" readonly="won_status == 'lost'"/>
+                                    <field name="fuel_type" readonly="won_status == 'lost'"/>
+                                    <field name="inspection_expiry_date" readonly="won_status == 'lost'"/>
+                                    <field name="cylinder_capacity" readonly="won_status == 'lost'"/>
+                                    <field name="container_size" readonly="won_status == 'lost'"/>
+                                    <field name="axle_length" readonly="won_status == 'lost'"/>
+                                    <field name="engine_power_rpm" readonly="won_status == 'lost'"/>
                                 </group>
 
                                 <group>
-                                    <field name="license_plate"/>
-                                    <field name="owner_name"/>
-                                    <field name="managing_unit"/>
-                                    <field name="registration_address"/>
-                                    <field name="manufacture_year"/>
-                                    <field name="manufacture_country"/>
-                                    <field name="designed_payload"/>
-                                    <field name="allowed_people"/>
-                                    <field name="total_weight_design"/>
-                                    <field name="towing_weight"/>
-                                    <field name="inspection_certificate_no"/>
-                                    <field name="inspection_serial"/>
-                                    <field name="inspection_issue_date"/>
-                                    <field name="inspection_expiry_date"/>
-                                    <field name="modified_status"/>
+                                    <field name="license_plate" readonly="won_status == 'lost'"/>
+                                    <field name="owner_name" readonly="won_status == 'lost'"/>
+                                    <field name="managing_unit" readonly="won_status == 'lost'"/>
+                                    <field name="registration_address" readonly="won_status == 'lost'"/>
+                                    <field name="manufacture_year" readonly="won_status == 'lost'"/>
+                                    <field name="manufacture_country" readonly="won_status == 'lost'"/>
+                                    <field name="designed_payload" readonly="won_status == 'lost'"/>
+                                    <field name="allowed_people" readonly="won_status == 'lost'"/>
+                                    <field name="total_weight_design" readonly="won_status == 'lost'"/>
+                                    <field name="towing_weight" readonly="won_status == 'lost'"/>
+                                    <field name="inspection_certificate_no" readonly="won_status == 'lost'"/>
+                                    <field name="inspection_serial" readonly="won_status == 'lost'"/>
+                                    <field name="inspection_issue_date" readonly="won_status == 'lost'"/>
+                                    <field name="inspection_expiry_date" readonly="won_status == 'lost'"/>
+                                    <field name="modified_status" readonly="won_status == 'lost'"/>
                                 </group>
                             </group>
                         </page>
                         <page string="Thông tin đăng ký">
                             <group col="2">
                                 <group>
-                                    <field name="vehicle_category"/>
-                                    <field name="brand"/>
-                                    <field name="model"/>
-                                    <field name="seat_capacity"/>
-                                    <field name="manufacture_year"/>
-                                    <field name="chassis_number"/>
-                                    <field name="engine_number"/>
-                                    <field name="color"/>
-                                    <field name="payload_weight"/>
-                                    <field name="first_registration_date"/>
-                                    <field name="last_registration_date"/>
+                                    <field name="vehicle_category" readonly="won_status == 'lost'"/>
+                                    <field name="brand" readonly="won_status == 'lost'"/>
+                                    <field name="model" readonly="won_status == 'lost'"/>
+                                    <field name="seat_capacity" readonly="won_status == 'lost'"/>
+                                    <field name="manufacture_year" readonly="won_status == 'lost'"/>
+                                    <field name="chassis_number" readonly="won_status == 'lost'"/>
+                                    <field name="engine_number" readonly="won_status == 'lost'"/>
+                                    <field name="color" readonly="won_status == 'lost'"/>
+                                    <field name="payload_weight" readonly="won_status == 'lost'"/>
+                                    <field name="first_registration_date" readonly="won_status == 'lost'"/>
+                                    <field name="last_registration_date" readonly="won_status == 'lost'"/>
                                 </group>
                                 <group>
-                                    <field name="license_plate"/>
-                                    <field name="plate_type"/>
-                                    <field name="usage_purpose"/>
-                                    <field name="estimated_value"/>
-                                    <field name="inspection_issue_date"/>
-                                    <field name="inspection_expiry_date"/>
-                                    <field name="insurance_expiry_date"/>
+                                    <field name="license_plate" readonly="won_status == 'lost'"/>
+                                    <field name="plate_type" readonly="won_status == 'lost'"/>
+                                    <field name="usage_purpose" readonly="won_status == 'lost'"/>
+                                    <field name="estimated_value" readonly="won_status == 'lost'"/>
+                                    <field name="inspection_issue_date" readonly="won_status == 'lost'"/>
+                                    <field name="inspection_expiry_date" readonly="won_status == 'lost'"/>
+                                    <field name="insurance_expiry_date" readonly="won_status == 'lost'"/>
                                     <separator string="Thông tin chủ xe"/>
-                                    <field name="owner_name"/>
-                                    <field name="registration_address"/>
+                                    <field name="owner_name" readonly="won_status == 'lost'"/>
+                                    <field name="registration_address" readonly="won_status == 'lost'"/>
                                 </group>
 
                             </group>
                         </page>
                         <page string="Lịch sử đơn hàng"></page>
-                        <page string="Lịch sử Agent phụ trách"></page>
+                        <page string="Lịch sử phân công">
+                            <field name="assign_history_ids" readonly="1">
+                                <list>
+                                    <field name="create_date"/>
+                                    <field name="manager_id"/>
+                                    <field name="user_id"/>
+                                    <field name="campaign_id" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
                     </notebook>
                 </sheet>
                 <!-- Chatter -->

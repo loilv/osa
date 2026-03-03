@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="crm_history_assign_view_list" model="ir.ui.view">
+            <field name="name">crm.history.assign.list</field>
+            <field name="model">crm.history.assign</field>
+            <field name="arch" type="xml">
+                <list string="crm_history_assign_tree">
+                    <field name="create_date"/>
+                    <field name="manager_id"/>
+                    <field name="user_id"/>
+                    <field name="campaign_id"/>
+                </list>
+            </field>
+        </record>
+
+    </data>
+</odoo>
