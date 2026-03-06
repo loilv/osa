@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>REST API Gateway Pro - Odoo 19</title>
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+      <div class="container-fluid">
+            <!-- Header -->
+            <div class="row bg-dark text-white py-5">
+                  <div class="col-12">
+                        <h1 class="display-4 fw-bold text-white">REST API Gateway Pro</h1>
+                        <p class="lead">Odoo 19 Production-Ready REST API with JWT, Rate Limiting & Analytics</p>
+                        <a href="https://youtu.be/oR5-hDT4_EU" class="py-2 btn btn-primary" target="_blank">Watch
+                              Demo</a>
+                  </div>
+            </div>
+            <img src="./91256b37-3611-438e-be60-a762ef13492e.png" class="w-100 my-2" alt="alt" />
+            <!-- Navigation -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
+                  <div class="container-fluid">
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                              data-bs-target="#navbarNav">
+                              <span class="navbar-toggler-icon"></span>
+                        </button>
+                        <div class="collapse navbar-collapse" id="navbarNav">
+                              <ul class="navbar-nav ms-auto">
+                                    <li class="nav-item"><a class="nav-link" href="#overview">Overview</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="#workflow">Workflow</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="#create-api">Create API</a></li>
+                                    <li class="nav-item"><a class="nav-link" href="#authentication">Authentication</a>
+                                    </li>
+                                    <li class="nav-item"><a class="nav-link" href="#examples">Examples</a></li>
+                              </ul>
+                        </div>
+                  </div>
+            </nav>
+
+            <div class="container">
+                  <!-- Overview Section -->
+                  <section id="overview" class="mb-5">
+                        <h2 class="border-bottom pb-3 mb-4">Module Overview</h2>
+                        <div class="row">
+                              <div class="col-md-4 mb-3">
+                                    <div class="card h-100">
+                                          <div class="card-body">
+                                                <h5 class="card-title">JWT Authentication</h5>
+                                                <p class="card-text">Secure token-based authentication with access and
+                                                      refresh tokens. Tokens expire automatically.</p>
+                                                <span class="badge bg-primary">Security</span>
+                                          </div>
+                                    </div>
+                              </div>
+                              <div class="col-md-4 mb-3">
+                                    <div class="card h-100">
+                                          <div class="card-body">
+                                                <h5 class="card-title">API Key Management</h5>
+                                                <p class="card-text">Per-application keys with scope-based permissions
+                                                      and rate limiting controls.</p>
+                                                <span class="badge bg-success">Authorization</span>
+                                          </div>
+                                    </div>
+                              </div>
+                              <div class="col-md-4 mb-3">
+                                    <div class="card h-100">
+                                          <div class="card-body">
+                                                <h5 class="card-title">Rate Limiting</h5>
+                                                <p class="card-text">Per-minute and per-hour throttling with automatic
+                                                      IP blocking on violations.</p>
+                                                <span class="badge bg-warning">Protection</span>
+                                          </div>
+                                    </div>
+                              </div>
+                        </div>
+                  </section>
+
+                  <!-- Workflow Section -->
+                  <section id="workflow" class="mb-5">
+                        <h2 class="border-bottom pb-3 mb-4">Complete Workflow</h2>
+
+                        <div class="card mb-4">
+                              <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">API Request Flow</h5>
+                              </div>
+                              <div class="card-body">
+                                    <div class="row">
+                                          <div class="col-12">
+                                                <ol class="list-group list-group-numbered">
+                                                      <li class="list-group-item">
+                                                            <strong>Client Request</strong>
+                                                            <p class="mb-0 text-muted">Client sends HTTP request with
+                                                                  JWT token or API key</p>
+                                                      </li>
+                                                      <li class="list-group-item">
+                                                            <strong>Middleware Processing</strong>
+                                                            <p class="mb-0 text-muted">Request passes through
+                                                                  api_middleware.py for authentication and validation
+                                                            </p>
+                                                      </li>
+                                                      <li class="list-group-item">
+                                                            <strong>Authorization Check</strong>
+                                                            <p class="mb-0 text-muted">Verify scope permissions
+                                                                  (products_read, products_write, etc.)</p>
+                                                      </li>
+                                                      <li class="list-group-item">
+                                                            <strong>Rate Limit Check</strong>
+                                                            <p class="mb-0 text-muted">Check per-minute and per-hour
+                                                                  limits for the API key</p>
+                                                      </li>
+                                                      <li class="list-group-item">
+                                                            <strong>IP Whitelist Validation</strong>
+                                                            <p class="mb-0 text-muted">Verify request IP against allowed
+                                                                  IPs if configured</p>
+                                                      </li>
+                                                      <li class="list-group-item">
+                                                            <strong>Controller Processing</strong>
+                                                            <p class="mb-0 text-muted">Route to appropriate controller
+                                                                  (product, order, customer)</p>
+                                                      </li>
+                                                      <li class="list-group-item">
+                                                            <strong>Business Logic Execution</strong>
+                                                            <p class="mb-0 text-muted">Execute create, read, update, or
+                                                                  delete operations</p>
+                                                      </li>
+                                                      <li class="list-group-item">
+                                                            <strong>Response Formatting</strong>
+                                                            <p class="mb-0 text-muted">Serialize data using field
+                                                                  whitelist for security</p>
+                                                      </li>
+                                                      <li class="list-group-item">
+                                                            <strong>Request Logging</strong>
+                                                            <p class="mb-0 text-muted">Save request/response info to
+                                                                  api.log model for audit trail</p>
+                                                      </li>
+                                                      <li class="list-group-item">
+                                                            <strong>JSON Response</strong>
+                                                            <p class="mb-0 text-muted">Return formatted JSON with
+                                                                  success/error status</p>
+                                                      </li>
+                                                </ol>
+                                          </div>
+                                    </div>
+                              </div>
+                        </div>
+
+                        <div class="card mb-4">
+                              <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0">Authentication Methods</h5>
+                              </div>
+                              <div class="card-body">
+                                    <div class="table-responsive">
+                                          <table class="table table-hover">
+                                                <thead class="table-light">
+                                                      <tr>
+                                                            <th>Method</th>
+                                                            <th>Header</th>
+                                                            <th>Format</th>
+                                                            <th>Scope</th>
+                                                      </tr>
+                                                </thead>
+                                                <tbody>
+                                                      <tr>
+                                                            <td><span class="badge bg-primary">JWT Token</span></td>
+                                                            <td>Authorization</td>
+                                                            <td>Bearer &lt;access_token&gt;</td>
+                                                            <td>All capabilities</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><span class="badge bg-success">API Key</span></td>
+                                                            <td>X-API-Key</td>
+                                                            <td>&lt;api_key&gt;</td>
+                                                            <td>By configuration</td>
+                                                      </tr>
+                                                </tbody>
+                                          </table>
+                                    </div>
+                              </div>
+                        </div>
+                  </section>
+
+                  <!-- Create API Section -->
+                  <section id="create-api" class="mb-5">
+                        <h2 class="border-bottom pb-3 mb-4">Create Operations</h2>
+
+                        <!-- Create Product -->
+                        <div class="card mb-4">
+                              <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">Create Product</h5>
+                              </div>
+                              <div class="card-body">
+                                    <h6 class="fw-bold mb-3">Endpoint Details</h6>
+                                    <div class="alert alert-light border">
+                                          <p class="mb-0"><strong>Method:</strong> POST</p>
+                                          <p class="mb-0"><strong>Path:</strong> /api/v1/products</p>
+                                          <p class="mb-0"><strong>Scope Required:</strong> products_write</p>
+                                    </div>
+
+                                    <h6 class="fw-bold mb-3 mt-4">Request Body</h6>
+                                    <div class="table-responsive">
+                                          <table class="table table-sm table-bordered">
+                                                <thead class="table-light">
+                                                      <tr>
+                                                            <th>Field</th>
+                                                            <th>Type</th>
+                                                            <th>Required</th>
+                                                            <th>Description</th>
+                                                      </tr>
+                                                </thead>
+                                                <tbody>
+                                                      <tr>
+                                                            <td><code>name</code></td>
+                                                            <td>String</td>
+                                                            <td><span class="badge bg-danger">Yes</span></td>
+                                                            <td>Product name/title</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><code>default_code</code></td>
+                                                            <td>String</td>
+                                                            <td>No</td>
+                                                            <td>Internal product code/SKU</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><code>barcode</code></td>
+                                                            <td>String</td>
+                                                            <td>No</td>
+                                                            <td>Product barcode</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><code>list_price</code></td>
+                                                            <td>Float</td>
+                                                            <td>No</td>
+                                                            <td>Selling price</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><code>standard_price</code></td>
+                                                            <td>Float</td>
+                                                            <td>No</td>
+                                                            <td>Cost price</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><code>categ_id</code></td>
+                                                            <td>Integer</td>
+                                                            <td>No</td>
+                                                            <td>Category ID</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><code>type</code></td>
+                                                            <td>String</td>
+                                                            <td>No</td>
+                                                            <td>consu, product, service</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><code>description_sale</code></td>
+                                                            <td>String</td>
+                                                            <td>No</td>
+                                                            <td>Product description</td>
+                                                      </tr>
+                                                </tbody>
+                                          </table>
+                                    </div>
+
+                                    <h6 class="fw-bold mb-3 mt-4">Processing Steps</h6>
+                                    <ol class="list-group list-group-numbered">
+                                          <li class="list-group-item">Validate JSON body format</li>
+                                          <li class="list-group-item">Check required fields (name)</li>
+                                          <li class="list-group-item">Filter writable fields from request</li>
+                                          <li class="list-group-item">Create product.template record in database</li>
+                                          <li class="list-group-item">Serialize response using PRODUCT_FIELDS whitelist
+                                          </li>
+                                          <li class="list-group-item">Log request to api.log</li>
+                                          <li class="list-group-item">Return JSON response with created product data
+                                          </li>
+                                    </ol>
+
+                                    <h6 class="fw-bold mb-3 mt-4">Response</h6>
+                                    <pre class="bg-light p-3 rounded border"><code>{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "Example Product",
+    "default_code": "PROD001",
+    "list_price": 99.99,
+    "categ_id": {"id": 1, "name": "Electronics"},
+    "active": true
+  },
+  "message": "Product created successfully"
+}</code></pre>
+                              </div>
+                        </div>
+
+                        <!-- Create Order -->
+                        <div class="card mb-4">
+                              <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">Create Order</h5>
+                              </div>
+                              <div class="card-body">
+                                    <h6 class="fw-bold mb-3">Endpoint Details</h6>
+                                    <div class="alert alert-light border">
+                                          <p class="mb-0"><strong>Method:</strong> POST</p>
+                                          <p class="mb-0"><strong>Path:</strong> /api/v1/orders</p>
+                                          <p class="mb-0"><strong>Scope Required:</strong> orders_write</p>
+                                    </div>
+
+                                    <h6 class="fw-bold mb-3 mt-4">Request Body</h6>
+                                    <div class="table-responsive">
+                                          <table class="table table-sm table-bordered">
+                                                <thead class="table-light">
+                                                      <tr>
+                                                            <th>Field</th>
+                                                            <th>Type</th>
+                                                            <th>Required</th>
+                                                            <th>Description</th>
+                                                      </tr>
+                                                </thead>
+                                                <tbody>
+                                                      <tr>
+                                                            <td><code>partner_id</code></td>
+                                                            <td>Integer</td>
+                                                            <td><span class="badge bg-danger">Yes</span></td>
+                                                            <td>Customer ID (res.partner)</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><code>order_lines</code></td>
+                                                            <td>Array</td>
+                                                            <td><span class="badge bg-danger">Yes</span></td>
+                                                            <td>Array of order line objects</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><code>warehouse_id</code></td>
+                                                            <td>Integer</td>
+                                                            <td>No</td>
+                                                            <td>Default warehouse used</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><code>notes</code></td>
+                                                            <td>String</td>
+                                                            <td>No</td>
+                                                            <td>Order notes/comments</td>
+                                                      </tr>
+                                                </tbody>
+                                          </table>
+                                    </div>
+
+                                    <h6 class="fw-bold mb-3 mt-4">Order Line Structure</h6>
+                                    <pre class="bg-light p-3 rounded border"><code>"order_lines": [
+  {
+    "product_id": 1,
+    "product_qty": 5,
+    "price_unit": 99.99
+  }
+]</code></pre>
+
+                                    <h6 class="fw-bold mb-3 mt-4">Processing Steps</h6>
+                                    <ol class="list-group list-group-numbered">
+                                          <li class="list-group-item">Parse JSON request body</li>
+                                          <li class="list-group-item">Validate partner_id exists</li>
+                                          <li class="list-group-item">Validate order_lines array</li>
+                                          <li class="list-group-item">Validate each product exists</li>
+                                          <li class="list-group-item">Create sale.order record</li>
+                                          <li class="list-group-item">Create sale.order.line records for each line</li>
+                                          <li class="list-group-item">Calculate totals and tax</li>
+                                          <li class="list-group-item">Return order data with confirmation status</li>
+                                    </ol>
+                              </div>
+                        </div>
+
+                        <!-- Create Customer -->
+                        <div class="card mb-4">
+                              <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">Create Customer</h5>
+                              </div>
+                              <div class="card-body">
+                                    <h6 class="fw-bold mb-3">Endpoint Details</h6>
+                                    <div class="alert alert-light border">
+                                          <p class="mb-0"><strong>Method:</strong> POST</p>
+                                          <p class="mb-0"><strong>Path:</strong> /api/v1/customers</p>
+                                          <p class="mb-0"><strong>Scope Required:</strong> customers_write</p>
+                                    </div>
+
+                                    <h6 class="fw-bold mb-3 mt-4">Request Body</h6>
+                                    <div class="table-responsive">
+                                          <table class="table table-sm table-bordered">
+                                                <thead class="table-light">
+                                                      <tr>
+                                                            <th>Field</th>
+                                                            <th>Type</th>
+                                                            <th>Required</th>
+                                                            <th>Description</th>
+                                                      </tr>
+                                                </thead>
+                                                <tbody>
+                                                      <tr>
+                                                            <td><code>name</code></td>
+                                                            <td>String</td>
+                                                            <td><span class="badge bg-danger">Yes</span></td>
+                                                            <td>Customer name</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><code>email</code></td>
+                                                            <td>String</td>
+                                                            <td>No</td>
+                                                            <td>Email address</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><code>phone</code></td>
+                                                            <td>String</td>
+                                                            <td>No</td>
+                                                            <td>Phone number</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><code>street</code></td>
+                                                            <td>String</td>
+                                                            <td>No</td>
+                                                            <td>Address</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><code>country_id</code></td>
+                                                            <td>Integer</td>
+                                                            <td>No</td>
+                                                            <td>Country ID</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><code>is_company</code></td>
+                                                            <td>Boolean</td>
+                                                            <td>No</td>
+                                                            <td>Mark as company</td>
+                                                      </tr>
+                                                </tbody>
+                                          </table>
+                                    </div>
+
+                                    <h6 class="fw-bold mb-3 mt-4">Processing Steps</h6>
+                                    <ol class="list-group list-group-numbered">
+                                          <li class="list-group-item">Validate JSON body</li>
+                                          <li class="list-group-item">Check required name field</li>
+                                          <li class="list-group-item">Filter writable fields</li>
+                                          <li class="list-group-item">Create res.partner record</li>
+                                          <li class="list-group-item">Validate email format if provided</li>
+                                          <li class="list-group-item">Serialize response data</li>
+                                          <li class="list-group-item">Log to audit trail</li>
+                                          <li class="list-group-item">Return created customer record</li>
+                                    </ol>
+                              </div>
+                        </div>
+                  </section>
+
+                  <!-- Authentication Section -->
+                  <section id="authentication" class="mb-5">
+                        <h2 class="border-bottom pb-3 mb-4">Authentication System</h2>
+
+                        <div class="card mb-4">
+                              <div class="card-header bg-dark text-white">
+                                    <h5 class="mb-0">JWT Token Flow</h5>
+                              </div>
+                              <div class="card-body">
+                                    <h6 class="fw-bold mb-3">Token Generation</h6>
+                                    <ol class="list-group list-group-numbered">
+                                          <li class="list-group-item">
+                                                <strong>User Login</strong><br>
+                                                POST /api/v1/auth/login with email/password
+                                          </li>
+                                          <li class="list-group-item">
+                                                <strong>Credential Validation</strong><br>
+                                                Verify user exists and password matches
+                                          </li>
+                                          <li class="list-group-item">
+                                                <strong>Token Creation</strong><br>
+                                                Access token (1 hour) and refresh token (7 days) generated via PyJWT
+                                          </li>
+                                          <li class="list-group-item">
+                                                <strong>Payload Encoding</strong><br>
+                                                Include user ID, token type, iat, and exp claims
+                                          </li>
+                                          <li class="list-group-item">
+                                                <strong>Token Response</strong><br>
+                                                Return both tokens to client for storage
+                                          </li>
+                                    </ol>
+
+                                    <h6 class="fw-bold mb-3 mt-4">Token Validation on Request</h6>
+                                    <ol class="list-group list-group-numbered">
+                                          <li class="list-group-item">Extract token from Authorization header</li>
+                                          <li class="list-group-item">Decode JWT with secret key</li>
+                                          <li class="list-group-item">Verify token type (access vs refresh)</li>
+                                          <li class="list-group-item">Check expiration timestamp</li>
+                                          <li class="list-group-item">Extract user ID from payload</li>
+                                          <li class="list-group-item">Grant access if valid</li>
+                                    </ol>
+
+                                    <h6 class="fw-bold mb-3 mt-4">Token Configuration</h6>
+                                    <div class="table-responsive">
+                                          <table class="table table-sm">
+                                                <tbody>
+                                                      <tr>
+                                                            <td><strong>Algorithm</strong></td>
+                                                            <td>HS256</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><strong>Access Token TTL</strong></td>
+                                                            <td>3600 seconds (1 hour)</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><strong>Refresh Token TTL</strong></td>
+                                                            <td>604800 seconds (7 days)</td>
+                                                      </tr>
+                                                      <tr>
+                                                            <td><strong>Secret Source</strong></td>
+                                                            <td>Database UUID + odoo-rest-api prefix</td>
+                                                      </tr>
+                                                </tbody>
+                                          </table>
+                                    </div>
+                              </div>
+                        </div>
+
+                        <div class="card mb-4">
+                              <div class="card-header bg-dark text-white">
+                                    <h5 class="mb-0">API Key Authentication</h5>
+                              </div>
+                              <div class="card-body">
+                                    <h6 class="fw-bold mb-3">Key Lifecycle</h6>
+                                    <ol class="list-group list-group-numbered">
+                                          <li class="list-group-item">
+                                                <strong>Key Generation</strong><br>
+                                                Auto-generated 64-character URL-safe token on creation
+                                          </li>
+                                          <li class="list-group-item">
+                                                <strong>Key Hashing</strong><br>
+                                                SHA-256 hash stored in database for security
+                                          </li>
+                                          <li class="list-group-item">
+                                                <strong>Scope Assignment</strong><br>
+                                                Assign permissions (products_read, products_write, etc.)
+                                          </li>
+                                          <li class="list-group-item">
+                                                <strong>Rate Limiting</strong><br>
+                                                Configure per-minute and per-hour limits
+                                          </li>
+                                          <li class="list-group-item">
+                                                <strong>IP Whitelist</strong><br>
+                                                Optionally restrict to specific IP addresses
+                                          </li>
+                                          <li class="list-group-item">
+                                                <strong>Expiration Date</strong><br>
+                                                Optional expiration for temporary keys
+                                          </li>
+                                    </ol>
+
+                                    <h6 class="fw-bold mb-3 mt-4">Key Validation Process</h6>
+                                    <ol class="list-group list-group-numbered">
+                                          <li class="list-group-item">Extract API key from X-API-Key header</li>
+                                          <li class="list-group-item">Compute SHA-256 hash of provided key</li>
+                                          <li class="list-group-item">Search for matching key record</li>
+                                          <li class="list-group-item">Check key is active (not revoked)</li>
+                                          <li class="list-group-item">Validate expiration date</li>
+                                          <li class="list-group-item">Load associated user and scopes</li>
+                                          <li class="list-group-item">Grant or deny access based on scopes</li>
+                                    </ol>
+                              </div>
+                        </div>
+                  </section>
+
+                  <!-- Examples Section -->
+                  <section id="examples" class="mb-5">
+                        <h2 class="border-bottom pb-3 mb-4">Usage Examples</h2>
+
+                        <div class="card mb-4">
+                              <div class="card-header bg-secondary text-white">
+                                    <h5 class="mb-0">Example 1: Create Product with JWT</h5>
+                              </div>
+                              <div class="card-body">
+                                    <h6 class="fw-bold mb-2">Request</h6>
+                                    <pre class="bg-light p-3 rounded border"><code>curl -X POST http://localhost:8069/api/v1/products \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Wireless Keyboard",
+    "default_code": "KB001",
+    "list_price": 79.99,
+    "categ_id": 2,
+    "description_sale": "Ergonomic wireless keyboard"
+  }'</code></pre>
+
+                                    <h6 class="fw-bold mb-2 mt-3">Response</h6>
+                                    <pre class="bg-light p-3 rounded border"><code>{
+  "success": true,
+  "data": {
+    "id": 5,
+    "name": "Wireless Keyboard",
+    "default_code": "KB001",
+    "list_price": 79.99,
+    "categ_id": {"id": 2, "name": "Peripherals"},
+    "active": true,
+    "qty_available": 0
+  },
+  "message": "Product created successfully"
+}</code></pre>
+                              </div>
+                        </div>
+
+                        <div class="card mb-4">
+                              <div class="card-header bg-secondary text-white">
+                                    <h5 class="mb-0">Example 2: Create Order with API Key</h5>
+                              </div>
+                              <div class="card-body">
+                                    <h6 class="fw-bold mb-2">Request</h6>
+                                    <pre class="bg-light p-3 rounded border"><code>curl -X POST http://localhost:8069/api/v1/orders \
+  -H "X-API-Key: your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "partner_id": 3,
+    "order_lines": [
+      {
+        "product_id": 1,
+        "product_qty": 2,
+        "price_unit": 99.99
+      },
+      {
+        "product_id": 5,
+        "product_qty": 1,
+        "price_unit": 79.99
+      }
+    ]
+  }'</code></pre>
+
+                                    <h6 class="fw-bold mb-2 mt-3">Response</h6>
+                                    <pre class="bg-light p-3 rounded border"><code>{
+  "success": true,
+  "data": {
+    "id": 10,
+    "partner_id": {"id": 3, "name": "John Doe"},
+    "amount_total": 259.97,
+    "state": "draft",
+    "order_lines": [
+      {
+        "id": 25,
+        "product_id": {"id": 1, "name": "Mouse"},
+        "qty": 2
+      }
+    ]
+  },
+  "message": "Order created successfully"
+}</code></pre>
+                              </div>
+                        </div>
+
+                        <div class="card mb-4">
+                              <div class="card-header bg-secondary text-white">
+                                    <h5 class="mb-0">Example 3: Create Customer</h5>
+                              </div>
+                              <div class="card-body">
+                                    <h6 class="fw-bold mb-2">Request</h6>
+                                    <pre class="bg-light p-3 rounded border"><code>curl -X POST http://localhost:8069/api/v1/customers \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Jane Smith",
+    "email": "jane@example.com",
+    "phone": "+1-555-0123",
+    "street": "123 Main St",
+    "country_id": 1,
+    "is_company": false
+  }'</code></pre>
+
+                                    <h6 class="fw-bold mb-2 mt-3">Response</h6>
+                                    <pre class="bg-light p-3 rounded border"><code>{
+  "success": true,
+  "data": {
+    "id": 8,
+    "name": "Jane Smith",
+    "email": "jane@example.com",
+    "phone": "+1-555-0123",
+    "street": "123 Main St",
+    "country_id": {"id": 1, "name": "Belgium"},
+    "is_company": false,
+    "active": true
+  },
+  "message": "Customer created successfully"
+}</code></pre>
+                              </div>
+                        </div>
+
+                        <div class="card mb-4">
+                              <div class="card-header bg-secondary text-white">
+                                    <h5 class="mb-0">Example 4: Error Response</h5>
+                              </div>
+                              <div class="card-body">
+                                    <h6 class="fw-bold mb-2">Missing Required Field</h6>
+                                    <pre class="bg-light p-3 rounded border"><code>{
+  "success": false,
+  "error": {
+    "code": 400,
+    "message": "Missing required field: name"
+  }
+}</code></pre>
+
+                                    <h6 class="fw-bold mb-2 mt-3">Invalid JSON</h6>
+                                    <pre class="bg-light p-3 rounded border"><code>{
+  "success": false,
+  "error": {
+    "code": 400,
+    "message": "Invalid JSON body"
+  }
+}</code></pre>
+
+                                    <h6 class="fw-bold mb-2 mt-3">Rate Limit Exceeded</h6>
+                                    <pre class="bg-light p-3 rounded border"><code>{
+  "success": false,
+  "error": {
+    "code": 429,
+    "message": "Rate limit exceeded. Max 60 requests per minute"
+  }
+}</code></pre>
+                              </div>
+                        </div>
+                  </section>
+
+                  <!-- Security Section -->
+                  <section id="security" class="mb-5">
+                        <h2 class="border-bottom pb-3 mb-4">Security Features</h2>
+                        <div class="row">
+                              <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                          <div class="card-body">
+                                                <h6 class="card-title">Data Protection</h6>
+                                                <ul class="list-unstyled text-muted">
+                                                      <li>Field whitelist sanitization</li>
+                                                      <li>Company isolation</li>
+                                                      <li>User context isolation</li>
+                                                      <li>Many2one relation protection</li>
+                                                </ul>
+                                          </div>
+                                    </div>
+                              </div>
+                              <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                          <div class="card-body">
+                                                <h6 class="card-title">Access Control</h6>
+                                                <ul class="list-unstyled text-muted">
+                                                      <li>Scope-based permissions</li>
+                                                      <li>IP whitelist filtering</li>
+                                                      <li>Rate limiting enforcement</li>
+                                                      <li>API key revocation</li>
+                                                </ul>
+                                          </div>
+                                    </div>
+                              </div>
+                        </div>
+                  </section>
+
+                  <!-- Footer -->
+                  <section class="mb-5 pb-5">
+                        <div class="alert alert-info">
+                              <h6 class="alert-heading">Support & Documentation</h6>
+                              <p class="mb-0">For more information, visit the Swagger documentation at:
+                                    <code>/api/docs</code>
+                              </p>
+                        </div>
+                  </section>
+            </div>
+      </div>
+
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+      <!-- ============================================================ -->
+      <!-- Top-level menu                                               -->
+      <!-- ============================================================ -->
+      <menuitem id="menu_api_gateway_root"
+            name="🚀 API Gateway"
+            web_icon="odoo_rest_api_gateway,static/description/icon.png"
+            sequence="95" />
+
+      <!-- ============================================================ -->
+      <!-- Sub menus                                                     -->
+      <!-- ============================================================ -->
+      <menuitem id="menu_api_dashboard"
+            name="📊 Dashboard"
+            parent="menu_api_gateway_root"
+            action="action_api_dashboard"
+            sequence="10" />
+
+      <menuitem id="menu_api_keys"
+            name="🔑 API Keys"
+            parent="menu_api_gateway_root"
+            action="action_api_key"
+            sequence="20" />
+
+      <menuitem id="menu_api_logs"
+            name="📜 Request Logs"
+            parent="menu_api_gateway_root"
+            action="action_api_log"
+            sequence="30" />
+
+      <menuitem id="menu_api_config"
+            name="⚙️ Configuration"
+            parent="menu_api_gateway_root"
+            sequence="90" />
+
+      <menuitem id="menu_api_scopes"
+            name="🛡 Scopes"
+            parent="menu_api_config"
+            action="action_api_scope"
+            sequence="10" />
+</odoo>

@@ -18,12 +18,15 @@
         'wizard/lost_reason_popup.xml',
         'wizard/schedule_callback.xml',
         'wizard/zalo_chat_wizard.xml',
+        'wizard/campaign_assign.xml',
+        'views/update_tag.xml',
         'views/crm_lead.xml',
         'views/action_view.xml',
         'views/crm_stage.xml',
         'views/crm_history_assign.xml',
         'views/res_partner.xml',
         'views/crm_lost_reason.xml',
+        'views/crm_campaign.xml',
     ],
     'assets': {
         'web.assets_backend': [

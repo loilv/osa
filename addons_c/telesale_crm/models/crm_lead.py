@@ -19,6 +19,7 @@ class CrmLead(models.Model):
     date_of_birth = fields.Date(related='partner_id.date_of_birth')
     gender = fields.Selection(related='partner_id.gender')
     stage_note = fields.Text('Ghi chú')
+    crm_campaign_id = fields.Many2one('crm.campaign', string='Chiến dịch')
 
     # ===== Thông tin cơ bản =====
     vehicle_type = fields.Char(string='Hạng xe')
@@ -119,7 +120,9 @@ class CrmLead(models.Model):
         )
 
     def assign_tag(self):
-        pass
+        action = self.env["ir.actions.actions"]._for_xml_id("telesale_crm.add_tag_action")
+        action['res_id'] = self.id
+        return action
 
     def make_order(self):
         pass

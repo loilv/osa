@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="odoo_rest_api_gateway.ApiDashboard">
+    <div class="o_api_dashboard">
+                  <!-- Header -->
+        <div class="o_api_dashboard_header">
+            <div class="d-flex justify-content-between align-items-center p-3">
+                <h2 class="mb-0">🚀 API Gateway Dashboard</h2>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary btn-sm" t-on-click="onRefresh">
+                        🔄 Refresh
+                    </button>
+                    <button class="btn btn-primary btn-sm" t-on-click="onOpenApiKeys">
+                        🔑 API Keys
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" t-on-click="onOpenLogs">
+                        📜 View Logs
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" t-on-click="onOpenDocs">
+                        📘 Swagger Docs
+                    </button>
+                </div>
+            </div>
+        </div>
+
+                  <!-- Loading -->
+        <div t-if="state.loading" class="text-center p-5">
+            <div class="spinner-border text-primary" role="status"/>
+            <p class="mt-2 text-muted">Loading dashboard data...</p>
+        </div>
+
+        <div t-else="" class="o_api_dashboard_content p-3">
+                        <!-- Summary Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-2">
+                    <div class="card o_api_card text-center shadow-sm">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-1">Total Calls</h6>
+                            <h3 class="text-primary mb-0" t-out="formatNumber(state.summary.total_calls)"/>
+                            <small class="text-muted">Last 30 days</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card o_api_card text-center shadow-sm">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-1">Successful</h6>
+                            <h3 class="text-success mb-0" t-out="formatNumber(state.summary.success_calls)"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card o_api_card text-center shadow-sm">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-1">Failed</h6>
+                            <h3 class="text-danger mb-0" t-out="formatNumber(state.summary.failed_calls)"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card o_api_card text-center shadow-sm">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-1">Success Rate</h6>
+                            <h3 class="text-info mb-0" t-out="getSuccessRate()"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card o_api_card text-center shadow-sm">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-1">Avg Response</h6>
+                            <h3 class="text-warning mb-0" t-out="formatMs(state.summary.avg_response_time)"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card o_api_card text-center shadow-sm">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-1">Unique IPs</h6>
+                            <h3 class="mb-0" t-out="formatNumber(state.summary.unique_ips)"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                        <!-- Charts + Tables -->
+            <div class="row g-3">
+                              <!-- Daily Traffic Chart (CSS bars) -->
+                <div class="col-lg-8">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white fw-bold">📈 Daily API Traffic (30 days)</div>
+                        <div class="card-body">
+                            <div class="o_api_bar_chart d-flex align-items-end gap-1"
+                                 style="height: 200px; overflow-x: auto;">
+                                <t t-foreach="state.dailyStats" t-as="day" t-key="day.date">
+                                    <div class="o_api_bar_group d-flex flex-column align-items-center"
+                                         style="min-width: 18px;">
+                                        <div class="o_api_bar bg-primary rounded-top"
+                                             t-attf-style="height: {{ getBarHeight(day.calls) }}%; width: 14px;"
+                                             t-att-title="day.date + ': ' + (day.calls || 0) + ' calls'"/>
+                                        <small class="text-muted mt-1"
+                                               style="font-size: 9px; writing-mode: vertical-lr; transform: rotate(180deg);"
+                                               t-out="day.date ? day.date.slice(5) : ''"/>
+                                    </div>
+                                </t>
+                            </div>
+                            <div t-if="!state.dailyStats.length" class="text-center text-muted p-4">
+                                No traffic data yet
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                              <!-- Top IPs -->
+                <div class="col-lg-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white fw-bold">🌍 Top IP Addresses</div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead>
+                                    <tr><th>IP Address</th><th class="text-end">Calls</th></tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="state.topIps" t-as="ip" t-key="ip.ip_address">
+                                        <tr>
+                                            <td><code t-out="ip.ip_address"/></td>
+                                            <td class="text-end" t-out="formatNumber(ip.call_count)"/>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                            <div t-if="!state.topIps.length" class="text-center text-muted p-3">
+                                No data
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                        <!-- Top Endpoints -->
+            <div class="row g-3 mt-1">
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white fw-bold">🔥 Top Endpoints (30 days)</div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Endpoint</th>
+                                        <th>Method</th>
+                                        <th class="text-end">Calls</th>
+                                        <th class="text-end">Avg Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="state.topEndpoints" t-as="ep" t-key="ep.endpoint + ep.method">
+                                        <tr>
+                                            <td><code t-out="ep.endpoint"/></td>
+                                            <td>
+                                                <span class="badge bg-info" t-out="ep.method"/>
+                                            </td>
+                                            <td class="text-end" t-out="formatNumber(ep.call_count)"/>
+                                            <td class="text-end" t-out="formatMs(ep.avg_time)"/>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                            <div t-if="!state.topEndpoints.length" class="text-center text-muted p-3">
+                                No endpoint data yet
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</t>
+
+</templates>

@@ -6,3 +6,5 @@ access_crm.campaign,crm.campaign,model_crm_campaign,base.group_user,1,1,1,1
 access_crm.lost.reason.wizard,crm.lost.reason.wizard,model_crm_lost_reason_wizard,base.group_user,1,1,1,1
 access_crm.schedule.callback,crm.schedule.callback,model_crm_schedule_callback,base.group_user,1,1,1,1
 access_zalo.chat.wizard,zalo.chat.wizard,model_zalo_chat_wizard,base.group_user,1,1,1,1
+access_crm.campaign,crm.campaign,model_crm_campaign,base.group_user,1,1,1,1
+access_crm.campaign.assign.wizard,crm.campaign.assign.wizard,model_crm_campaign_assign_wizard,base.group_user,1,1,1,1

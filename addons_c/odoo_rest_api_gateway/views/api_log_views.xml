@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+      <!-- ============================================================ -->
+      <!-- API Log – Tree View                                          -->
+      <!-- ============================================================ -->
+      <record id="view_api_log_tree" model="ir.ui.view">
+            <field name="name">api.log.tree</field>
+            <field name="model">api.log</field>
+            <field name="arch" type="xml">
+                  <list string="API Logs" create="0" edit="0"
+                        decoration-danger="not is_success"
+                        decoration-success="is_success">
+                        <field name="created_at" />
+                        <field name="method" widget="badge" />
+                        <field name="endpoint" />
+                        <field name="user_id" />
+                        <field name="status_code" />
+                        <field name="response_time" widget="float" string="Time (ms)" />
+                        <field name="ip_address" />
+                        <field name="is_success" column_invisible="1" />
+                  </list>
+            </field>
+      </record>
+
+      <!-- ============================================================ -->
+      <!-- API Log – Form View                                          -->
+      <!-- ============================================================ -->
+      <record id="view_api_log_form" model="ir.ui.view">
+            <field name="name">api.log.form</field>
+            <field name="model">api.log</field>
+            <field name="arch" type="xml">
+                  <form string="API Log" create="0" edit="0">
+                        <sheet>
+                              <group>
+                                    <group string="📡 Request">
+                                          <field name="method" />
+                                          <field name="endpoint" />
+                                          <field name="ip_address" />
+                                          <field name="user_agent" />
+                                          <field name="created_at" />
+                                    </group>
+                                    <group string="📊 Response">
+                                          <field name="status_code" />
+                                          <field name="response_time" />
+                                          <field name="is_success" />
+                                          <field name="user_id" />
+                                          <field name="api_key_id" />
+                                          <field name="company_id" groups="base.group_multi_company" />
+                                    </group>
+                              </group>
+                              <notebook>
+                                    <page string="Request Payload">
+                                          <field name="request_payload" nolabel="1" readonly="1" />
+                                    </page>
+                                    <page string="Response Payload">
+                                          <field name="response_payload" nolabel="1" readonly="1" />
+                                    </page>
+                                    <page string="Error" invisible="not error_message">
+                                          <field name="error_message" nolabel="1" readonly="1" />
+                                    </page>
+                              </notebook>
+                        </sheet>
+                  </form>
+            </field>
+      </record>
+
+      <!-- ============================================================ -->
+      <!-- API Log – Search View                                        -->
+      <!-- ============================================================ -->
+      <record id="view_api_log_search" model="ir.ui.view">
+            <field name="name">api.log.search</field>
+            <field name="model">api.log</field>
+            <field name="arch" type="xml">
+                  <search string="API Logs">
+                        <field name="endpoint" />
+                        <field name="method" />
+                        <field name="user_id" />
+                        <field name="ip_address" />
+                        <filter string="Success" name="filter_success"
+                              domain="[('is_success', '=', True)]" />
+                        <filter string="Failed" name="filter_failed"
+                              domain="[('is_success', '=', False)]" />
+                        <separator />
+                        <filter string="Today" name="filter_today"
+                              domain="[('date_only', '=', context_today().strftime('%Y-%m-%d'))]" />
+                        <filter string="Last 7 Days" name="filter_week"
+                              domain="[('created_at', '>=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]" />
+                        <filter string="Last 30 Days" name="filter_month"
+                              domain="[('created_at', '>=', (context_today() - datetime.timedelta(days=30)).strftime('%Y-%m-%d'))]" />
+                        <!-- <separator />
+                        <group expand="0" string="Group By">
+                              <filter string="Endpoint" name="group_endpoint"
+                                    context="{'group_by': 'endpoint'}" />
+                              <filter string="Method" name="group_method"
+                                    context="{'group_by': 'method'}" />
+                              <filter string="User" name="group_user"
+                                    context="{'group_by': 'user_id'}" />
+                              <filter string="Status Code" name="group_status"
+                                    context="{'group_by': 'status_code'}" />
+                              <filter string="Date" name="group_date"
+                                    context="{'group_by': 'date_only'}" />
+                              <filter string="IP Address" name="group_ip"
+                                    context="{'group_by': 'ip_address'}" />
+                        </group> -->
+                  </search>
+            </field>
+      </record>
+
+      <!-- ============================================================ -->
+      <!-- API Log – Pivot View                                         -->
+      <!-- ============================================================ -->
+      <record id="view_api_log_pivot" model="ir.ui.view">
+            <field name="name">api.log.pivot</field>
+            <field name="model">api.log</field>
+            <field name="arch" type="xml">
+                  <pivot string="API Logs">
+                        <field name="date_only" type="row" />
+                        <field name="endpoint" type="col" />
+                        <field name="status_code" type="measure" />
+                  </pivot>
+            </field>
+      </record>
+
+      <!-- ============================================================ -->
+      <!-- API Log – Graph View                                         -->
+      <!-- ============================================================ -->
+      <record id="view_api_log_graph" model="ir.ui.view">
+            <field name="name">api.log.graph</field>
+            <field name="model">api.log</field>
+            <field name="arch" type="xml">
+                  <graph string="API Calls" type="line">
+                        <field name="date_only" type="row" />
+                        <field name="endpoint" type="col" />
+                  </graph>
+            </field>
+      </record>
+
+      <!-- ============================================================ -->
+      <!-- API Log – Action                                             -->
+      <!-- ============================================================ -->
+      <record id="action_api_log" model="ir.actions.act_window">
+            <field name="name">API Logs</field>
+            <field name="res_model">api.log</field>
+            <field name="view_mode">list,form,graph,pivot</field>
+            <field name="search_view_id" ref="view_api_log_search" />
+            <field name="context">{'search_default_filter_today': 1}</field>
+            <field name="help" type="html">
+                  <p class="o_view_nocontent_smiling_face">
+                        No API requests logged yet
+                  </p>
+                  <p>API calls will appear here automatically once external apps start using the
+                        gateway.</p>
+            </field>
+      </record>
+</odoo>

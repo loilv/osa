@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_api_key_admin,api.key admin,model_api_key,base.group_system,1,1,1,1
+access_api_key_user,api.key user,model_api_key,base.group_user,1,0,0,0
+access_api_log_admin,api.log admin,model_api_log,base.group_system,1,1,1,1
+access_api_log_user,api.log user,model_api_log,base.group_user,1,0,0,0
+access_api_scope_admin,api.scope admin,model_api_scope,base.group_system,1,1,1,1
+access_api_scope_user,api.scope user,model_api_scope,base.group_user,1,0,0,0
+access_rate_limit_admin,rate.limit admin,model_rate_limit,base.group_system,1,1,1,1
+access_rate_limit_user,rate.limit user,model_rate_limit,base.group_user,1,0,0,0

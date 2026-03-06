@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+      <!-- ============================================================ -->
+      <!-- API Key – Tree View                                          -->
+      <!-- ============================================================ -->
+      <record id="view_api_key_tree" model="ir.ui.view">
+            <field name="name">api.key.tree</field>
+            <field name="model">api.key</field>
+            <field name="arch" type="xml">
+                  <list string="API Keys" decoration-danger="state == 'revoked'"
+                        decoration-warning="state == 'expired'">
+                        <field name="name" />
+                        <field name="user_id" />
+                        <field name="scope_ids" widget="many2many_tags" />
+                        <field name="rate_limit_per_minute" />
+                        <field name="company_id" groups="base.group_multi_company" />
+                        <field name="expiration_date" />
+                        <field name="total_calls" />
+                        <field name="last_used" />
+                        <field name="state" widget="badge"
+                              decoration-success="state == 'active'"
+                              decoration-danger="state == 'revoked'"
+                              decoration-warning="state == 'expired'" />
+                  </list>
+            </field>
+      </record>
+
+      <!-- ============================================================ -->
+      <!-- API Key – Form View                                          -->
+      <!-- ============================================================ -->
+      <record id="view_api_key_form" model="ir.ui.view">
+            <field name="name">api.key.form</field>
+            <field name="model">api.key</field>
+            <field name="arch" type="xml">
+                  <form string="API Key">
+                        <header>
+                              <button name="action_regenerate_key" type="object"
+                                    string="🔄 Regenerate Key" class="btn-primary"
+                                    confirm="This will invalidate the current key. Continue?" />
+                              <button name="action_revoke" type="object"
+                                    string="🚫 Revoke" class="btn-danger"
+                                    invisible="not active" />
+                              <field name="state" widget="statusbar"
+                                    statusbar_visible="active,expired,revoked" />
+                        </header>
+                        <sheet>
+                              <div class="oe_title">
+                                    <h1>
+                                          <field name="name" placeholder="e.g. Mobile App" />
+                                    </h1>
+                              </div>
+                              <group>
+                                    <group string="🔑 Key Details">
+                                          <field name="key" widget="CopyClipboardChar" />
+                                          <field name="user_id" />
+                                          <field name="company_id" groups="base.group_multi_company" />
+                                          <field name="expiration_date" />
+                                          <field name="active" invisible="1" />
+                                    </group>
+                                    <group string="🛡 Security">
+                                          <field name="scope_ids" widget="many2many_tags" />
+                                          <field name="rate_limit_per_minute" />
+                                          <field name="rate_limit_per_hour" />
+                                          <field name="allowed_ips"
+                                                placeholder="192.168.1.1, 10.0.0.1" />
+                                    </group>
+                              </group>
+                              <group string="📊 Usage Statistics">
+                                    <group>
+                                          <field name="total_calls" />
+                                          <field name="last_used" />
+                                    </group>
+                              </group>
+                              <group string="📝 Notes">
+                                    <field name="description" nolabel="1"
+                                          placeholder="Internal notes about this API key..." />
+                              </group>
+                        </sheet>
+                  </form>
+            </field>
+      </record>
+
+      <!-- ============================================================ -->
+      <!-- API Key – Search View                                        -->
+      <!-- ============================================================ -->
+      <record id="view_api_key_search" model="ir.ui.view">
+            <field name="name">api.key.search</field>
+            <field name="model">api.key</field>
+            <field name="arch" type="xml">
+                  <search string="API Keys">
+                        <field name="name" />
+                        <field name="user_id" />
+                        <field name="key" />
+                        <filter string="Active" name="filter_active"
+                              domain="[('state', '=', 'active')]" />
+                        <filter string="Expired" name="filter_expired"
+                              domain="[('state', '=', 'expired')]" />
+                        <filter string="Revoked" name="filter_revoked"
+                              domain="[('state', '=', 'revoked')]" />
+                        <!-- <separator /> -->
+                        <!-- <group expand="0" string="Group By">
+                              <filter string="User" name="group_user"
+                                    context="{'group_by': 'user_id'}" />
+                              <filter string="Company" name="group_company"
+                                    context="{'group_by': 'company_id'}" />
+                              <filter string="Status" name="group_state"
+                                    context="{'group_by': 'state'}" />
+                        </group> -->
+                  </search>
+            </field>
+      </record>
+
+      <!-- ============================================================ -->
+      <!-- API Key – Action                                             -->
+      <!-- ============================================================ -->
+      <record id="action_api_key" model="ir.actions.act_window">
+            <field name="name">API Keys</field>
+            <field name="res_model">api.key</field>
+            <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_api_key_search" />
+            <field name="context">{'search_default_filter_active': 1}</field>
+            <field name="help" type="html">
+                  <p class="o_view_nocontent_smiling_face">
+                        Create your first API Key
+                  </p>
+                  <p>
+                        API keys let external apps authenticate with your Odoo instance
+                        via the REST API Gateway.
+                  </p>
+            </field>
+      </record>
+</odoo>

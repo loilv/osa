@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="crm_campaign_view_list" model="ir.ui.view">
+            <field name="name">crm.campaign.list</field>
+            <field name="model">crm.campaign</field>
+            <field name="arch" type="xml">
+                <list string="crm_campaign_tree">
+                    <field name="name"/>
+                    <field name="start_date"/>
+                    <field name="end_date"/>
+                    <field name="opportunity_type"/>
+                    <field name="state"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="crm_campaign_view_form" model="ir.ui.view">
+            <field name="name">crm.campaign.form</field>
+            <field name="model">crm.campaign</field>
+            <field name="arch" type="xml">
+                <form string="crm_campaign_form">
+                    <header>
+                        <button name="%(telesale_crm.campaign_assign_action)s" string="Phân công" type="action"
+                                class="btn btn-success"/>
+                        <button name="manual_assign" string="Phân công thủ công" type="object" class="btn btn-success"/>
+                        <field name="state" widget="statusbar"/>
+                    </header>
+                    <sheet>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h1 class="flex-grow-1">
+                                <field class="text-break"
+                                       widget="text" name="name"
+                                       options="{'line_breaks': False}"
+                                       placeholder="Tên chiến dịch"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="start_date"/>
+                                <field name="opportunity_type"/>
+                            </group>
+                            <group>
+                                <field name="end_date"/>
+                                <field name="note"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page name="lead" string="Danh sách cơ hội">
+                                <field name="lead_ids">
+                                    <form>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h1 class="flex-grow-1">
+                                                <field class="text-break" readonly="won_status == 'lost'"
+                                                       options="{'line_breaks': False}"
+                                                       widget="text" name="name"
+                                                       placeholder="Cơ hội"/>
+                                            </h1>
+                                        </div>
+                                        <group>
+                                            <group string="Thông tin cơ hội">
+                                                <field name="stage_id" readonly="won_status == 'lost'"/>
+                                                <field name="tag_ids" readonly="won_status == 'lost'"
+                                                       widget="many2many_tags"
+                                                       options="{'color_field': 'color'}"/>
+                                                <field name="user_id" readonly="won_status == 'lost'"/>
+                                                <field name="call_back_time" readonly="won_status == 'lost'"/>
+                                                <field name="lost_reason_id" readonly="won_status == 'lost'"/>
+                                                <field name="stage_note" readonly="won_status == 'lost'"
+                                                       invisible="stage_note == False"/>
+                                            </group>
+
+                                            <group string="Thông tin định danh khách hàng">
+                                                <field name="partner_id" readonly="won_status == 'lost'"/>
+                                                <field name="gender" readonly="won_status == 'lost'"/>
+                                                <field name="date_of_birth" readonly="won_status == 'lost'"/>
+                                                <field name="phone" readonly="won_status == 'lost'"
+                                                       widget="asterisk_phone"/>
+                                                <field name="email_from" readonly="won_status == 'lost'"/>
+                                            </group>
+                                        </group>
+                                        <group>
+                                            <field name="note" readonly="won_status == 'lost'" string="Mô tả"/>
+                                        </group>
+                                    </form>
+                                    <list>
+                                        <field name="phone"/>
+                                        <field name="partner_id"/>
+                                        <field name="user_id"/>
+                                        <field name="date_insurance"/>
+                                        <field name="stage_id"/>
+                                        <field name="lost_reason_id"/>
+                                        <field name="stage_note"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="crm_campaign_action" model="ir.actions.act_window">
+            <field name="name">Chiến dịch</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">crm.campaign</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+        <menuitem
+                id="crm_menu_campaign"
+                name="Chiến dịch"
+                parent="crm.crm_menu_root"
+                action="crm_campaign_action"
+                sequence="1"/>
+
+    </data>
+</odoo>

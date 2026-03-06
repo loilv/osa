@@ -1,0 +1,79 @@
+/* ============================================================
+   REST API Gateway – Dashboard Styles
+   ============================================================ */
+
+.o_api_dashboard {
+  background: #f8f9fa;
+  height: 100%;
+  width: 100%;
+  overflow-y: scroll !important;
+}
+
+.o_api_dashboard_header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-bottom: 3px solid #5a67d8;
+
+  h2 {
+    color: white;
+    font-weight: 700;
+  }
+
+  .btn {
+    border-radius: 20px;
+    font-size: 0.85rem;
+  }
+}
+
+.o_api_card {
+  border: none;
+  border-radius: 12px;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  h3 {
+    font-weight: 700;
+    font-size: 1.8rem;
+  }
+
+  h6 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+.o_api_bar_chart {
+  .o_api_bar {
+    transition: height 0.3s ease;
+    opacity: 0.85;
+
+    &:hover {
+      opacity: 1;
+      cursor: pointer;
+    }
+  }
+}
+
+.card {
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+
+  .card-header {
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.95rem;
+  }
+}
+
+.badge.bg-info {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+}

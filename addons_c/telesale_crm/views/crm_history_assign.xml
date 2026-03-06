@@ -10,7 +10,7 @@
                     <field name="create_date"/>
                     <field name="manager_id"/>
                     <field name="user_id"/>
-                    <field name="campaign_id"/>
+                    <field name="crm_campaign_id"/>
                 </list>
             </field>
         </record>

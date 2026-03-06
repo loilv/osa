@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+      <!-- Cleanup old API logs (every day at 3 AM) -->
+      <record id="cron_cleanup_api_logs" model="ir.cron">
+            <field name="name">REST API Gateway: Cleanup Old Logs</field>
+            <field name="model_id" ref="model_api_log" />
+            <field name="state">code</field>
+            <field name="code">model._cron_cleanup_old_logs()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <!-- <field name="numbercall">-1</field> -->
+            <field name="active">True</field>
+      </record>
+
+      <!-- Reset rate limit counters (every hour) -->
+      <record id="cron_reset_rate_limits" model="ir.cron">
+            <field name="name">REST API Gateway: Reset Rate Limits</field>
+            <field name="model_id" ref="model_rate_limit" />
+            <field name="state">code</field>
+            <field name="code">model._cron_reset_counters()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">hours</field>
+            <!-- <field name="numbercall">-1</field> -->
+            <field name="active">True</field>
+      </record>
+
+      <!-- Default API scopes -->
+      <record id="scope_products_read" model="api.scope">
+            <field name="name">Products: Read</field>
+            <field name="code">products_read</field>
+            <field name="description">Read access to product catalog</field>
+            <field name="model_name">product.template</field>
+            <field name="perm_read">True</field>
+      </record>
+      <record id="scope_products_write" model="api.scope">
+            <field name="name">Products: Write</field>
+            <field name="code">products_write</field>
+            <field name="description">Create/update/archive products</field>
+            <field name="model_name">product.template</field>
+            <field name="perm_read">True</field>
+            <field name="perm_write">True</field>
+            <field name="perm_create">True</field>
+      </record>
+      <record id="scope_orders_read" model="api.scope">
+            <field name="name">Orders: Read</field>
+            <field name="code">orders_read</field>
+            <field name="description">Read access to sale orders</field>
+            <field name="model_name">sale.order</field>
+            <field name="perm_read">True</field>
+      </record>
+      <record id="scope_orders_write" model="api.scope">
+            <field name="name">Orders: Write</field>
+            <field name="code">orders_write</field>
+            <field name="description">Create/confirm/cancel sale orders</field>
+            <field name="model_name">sale.order</field>
+            <field name="perm_read">True</field>
+            <field name="perm_write">True</field>
+            <field name="perm_create">True</field>
+      </record>
+      <record id="scope_customers_read" model="api.scope">
+            <field name="name">Customers: Read</field>
+            <field name="code">customers_read</field>
+            <field name="description">Read access to customer contacts</field>
+            <field name="model_name">res.partner</field>
+            <field name="perm_read">True</field>
+      </record>
+      <record id="scope_customers_write" model="api.scope">
+            <field name="name">Customers: Write</field>
+            <field name="code">customers_write</field>
+            <field name="description">Create/update/archive customers</field>
+            <field name="model_name">res.partner</field>
+            <field name="perm_read">True</field>
+            <field name="perm_write">True</field>
+            <field name="perm_create">True</field>
+      </record>
+</odoo>

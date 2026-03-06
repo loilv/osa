@@ -3,6 +3,7 @@
     <record id="crm_oppo_list_view" model="ir.ui.view">
         <field name="name">crm_oppo_list_view</field>
         <field name="model">crm.lead</field>
+        <field name="priority">0</field>
         <field name="arch" type="xml">
             <list string="crm_oppo_list_view">
                 <header>
@@ -11,7 +12,7 @@
                     <button name="%(telesale_crm.assign_lead_action)d" type="action" string="Phân bổ cơ hội"/>
                 </header>
                 <field name="phone" widget="asterisk_phone"/>
-                <field name="campaign_id" optional="show"/>
+                <field name="crm_campaign_id" optional="show"/>
                 <field name="note" optional="hide"/>
                 <field name="stage_id" optional="show"/>
                 <field name="tag_ids" optional="show" widget="many2many_tags" options="{'color_field': 'color'}"/>
@@ -31,6 +32,7 @@
     <record id="crm_oppo_view_form" model="ir.ui.view">
         <field name="name">crm_oppo_view_form</field>
         <field name="model">crm.lead</field>
+        <field name="priority">0</field>
         <field name="arch" type="xml">
             <form string="crm_oppo_form">
                 <header>
@@ -224,7 +226,7 @@
                                     <field name="create_date"/>
                                     <field name="manager_id"/>
                                     <field name="user_id"/>
-                                    <field name="campaign_id" optional="show"/>
+                                    <field name="crm_campaign_id" optional="show"/>
                                 </list>
                             </field>
                         </page>
